@@ -59,7 +59,7 @@ import org.eclipse.swt.graphics.Transform;
  * reason there is no getGC method.
  */
 public class GCWrapper {
-	private static final float PF = 2000f;
+	private static final float PF = 200f;
 
 	private GC gc;
 	private boolean disposed;
