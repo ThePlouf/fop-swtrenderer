@@ -112,7 +112,7 @@ public class GCWrapper {
 		sy = gc.getDevice().getDPI().y / 72.0f;
 
 		// Temporary workaround for SWT bug 498062
-		if (gc.getDevice() instanceof Printer && !System.getProperty("os.name").contains("Mac OS X")) { //$NON-NLS-1$ //$NON-NLS-2$
+		if (gc.getDevice() instanceof Printer && System.getProperty("os.name").contains("Windows")) { //$NON-NLS-1$ //$NON-NLS-2$
 			String sz = System.getProperty("org.eclipse.swt.internal.deviceZoom", "100"); //$NON-NLS-1$ //$NON-NLS-2$
 			float zoom;
 			try {

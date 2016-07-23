@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>be.pdty.fop</groupId>
 	<artifactId>swtrenderer</artifactId>
-	<version>1.3</version>
+	<version>1.4</version>
 	<name>SWTRenderer</name>
 	<description>An FOP SWT Renderer</description>
 	<repositories>
