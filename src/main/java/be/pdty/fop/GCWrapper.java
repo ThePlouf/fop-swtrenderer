@@ -223,7 +223,14 @@ public class GCWrapper {
 		}
 
 		if (dirtyLineAttributes) {
-			gc.setLineAttributes(lineAttributes);
+			LineAttributes copy = new LineAttributes(lineAttributes.width * PF);
+			copy.cap = lineAttributes.cap;
+			copy.dash = lineAttributes.dash;
+			copy.dashOffset = lineAttributes.dashOffset;
+			copy.join = lineAttributes.join;
+			copy.miterLimit = lineAttributes.miterLimit;
+			copy.style = lineAttributes.style;
+			gc.setLineAttributes(copy);
 			dirtyLineAttributes = false;
 		}
 
