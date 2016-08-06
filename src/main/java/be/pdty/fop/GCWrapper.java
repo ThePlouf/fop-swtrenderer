@@ -29,6 +29,7 @@ import org.eclipse.swt.graphics.Path;
 import org.eclipse.swt.graphics.PathData;
 import org.eclipse.swt.graphics.RGBA;
 import org.eclipse.swt.graphics.Rectangle;
+import org.eclipse.swt.graphics.Region;
 import org.eclipse.swt.graphics.Transform;
 import org.eclipse.swt.printing.Printer;
 
@@ -49,6 +50,10 @@ import org.eclipse.swt.printing.Printer;
  * treat it as its "no transform" status. In other words setting the transform
  * to null will reset it back to the transform at the time the wrapper got
  * created.
+ * 
+ * The wrapper will ignore any existing clipping region and will always draw
+ * over the entire GC. Any further clipping request done through the wrapper
+ * will be considered global and will not be combined with the base clipping.
  * 
  * Any GC property (Font, colors...) will be restored when the wrapper is
  * disposed.
@@ -97,6 +102,7 @@ public class GCWrapper {
 	private int baseAntialias;
 	private int baseTextAntialias;
 	private int baseInterpolation;
+	private Region baseClip;
 
 	/**
 	 * Create a new GCWrapper.
@@ -128,6 +134,10 @@ public class GCWrapper {
 
 		baseTransform = new Transform(gc.getDevice());
 		gc.getTransform(baseTransform);
+
+		baseClip = new Region(gc.getDevice());
+		gc.getClipping(baseClip);
+		gc.setClipping((Region) null);
 
 		baseFont = gc.getFont();
 		baseForeground = gc.getForeground();
@@ -225,11 +235,19 @@ public class GCWrapper {
 		if (dirtyLineAttributes) {
 			LineAttributes copy = new LineAttributes(lineAttributes.width * PF);
 			copy.cap = lineAttributes.cap;
-			copy.dash = lineAttributes.dash;
-			copy.dashOffset = lineAttributes.dashOffset;
+			if (lineAttributes.dash != null) {
+				copy.dash = new float[lineAttributes.dash.length];
+				for (int i = 0; i < lineAttributes.dash.length; i++) {
+					copy.dash[i] = lineAttributes.dash[i] * PF;
+				}
+			} else {
+				copy.dash = null;
+			}
+			copy.dashOffset = lineAttributes.dashOffset * PF;
 			copy.join = lineAttributes.join;
-			copy.miterLimit = lineAttributes.miterLimit;
+			copy.miterLimit = lineAttributes.miterLimit * PF;
 			copy.style = lineAttributes.style;
+
 			gc.setLineAttributes(copy);
 			dirtyLineAttributes = false;
 		}
@@ -246,6 +264,10 @@ public class GCWrapper {
 		gc.setTransform(baseTransform);
 		baseTransform.dispose();
 		baseTransform = null;
+
+		gc.setClipping(baseClip);
+		baseClip.dispose();
+		baseClip = null;
 
 		gc.setForeground(baseForeground);
 		baseForeground = null;
@@ -349,8 +371,7 @@ public class GCWrapper {
 		if (clip != null && data == null) {
 			clip = null;
 			dirtyClip = true;
-		} else if (clip == null || !Arrays.equals(clip.points, data.points)
-		        || !Arrays.equals(clip.types, data.types)) {
+		} else if (clip == null || !Arrays.equals(clip.points, data.points) || !Arrays.equals(clip.types, data.types)) {
 			clip = data;
 			dirtyClip = true;
 		}
@@ -445,8 +466,19 @@ public class GCWrapper {
 	public void drawImage(Image image, float x, float y) {
 		commit();
 		Rectangle b = image.getBounds();
-		gc.drawImage(image, b.x, b.y, b.width, b.height, (int) (x * PF), (int) (y * PF), (int) (b.width * PF),
-		        (int) (b.height * PF));
+
+		// Disable clipping (not sure whether there is a bug with AWT or FOP but
+		// images are truncated when
+		// honoring clipping requests while drawing images)
+		Region region = new Region(gc.getDevice());
+		try {
+			gc.getClipping(region);
+			gc.drawImage(image, b.x, b.y, b.width, b.height, (int) (x * PF), (int) (y * PF), (int) (b.width * PF),
+			        (int) (b.height * PF));
+			gc.setClipping(region);
+		} finally {
+			region.dispose();
+		}
 	}
 
 	/**

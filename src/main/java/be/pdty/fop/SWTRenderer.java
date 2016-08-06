@@ -74,8 +74,7 @@ import org.eclipse.swt.graphics.PaletteData;
 /**
  * SWTRenderer. Compared to the AWTRenderer, the SWTRenderer has the following
  * limitations: - Only Base14 fonts are supported; - Fonts glyph offsets are not
- * supported; - Graphics2D images are not supported; - Clipping is not
- * supported.
+ * supported; - Graphics2D images are not supported.
  */
 public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageable {
 	private List<PageViewport> pageViewportList;
@@ -295,12 +294,10 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
 	}
 
 	private void drawH(float x1, float x2, float y) {
-		state.configureGC(wrapper);
 		wrapper.drawLine(x1/* +.5f */, y, x2/*-.5f*/, y);
 	}
 
 	private void drawV(float x, float y1, float y2) {
-		state.configureGC(wrapper);
 		wrapper.drawLine(x, y1/* +.5f */, x, y2/*-.5f*/);
 	}
 
@@ -323,6 +320,8 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
 			return;
 		}
 
+		state.configureGC(wrapper);
+
 		switch (style) {
 		case Constants.EN_DASHED:
 			wrapper.setColor(Convert.toRGBA(col));
@@ -335,7 +334,7 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
 				unit = w / rep;
 				float ym = y1 + (h / 2);
 				BasicStroke s = new BasicStroke(h, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 10.0f,
-				        new float[] { unit }, 0);
+				        new float[] { unit, unit }, 0);
 				wrapper.setLineAttributes(Convert.toLineAttributes(s));
 				drawH(x1, x2, ym);
 			} else {
@@ -347,7 +346,7 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
 				unit = h / rep;
 				float xm = x1 + (w / 2);
 				BasicStroke s = new BasicStroke(w, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 10.0f,
-				        new float[] { unit }, 0);
+				        new float[] { unit, unit }, 0);
 				wrapper.setLineAttributes(Convert.toLineAttributes(s));
 				drawV(xm, y1, y2);
 			}
@@ -363,7 +362,7 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
 				unit = w / rep;
 				float ym = y1 + (h / 2);
 				BasicStroke s = new BasicStroke(h, BasicStroke.CAP_ROUND, BasicStroke.JOIN_MITER, 10.0f,
-				        new float[] { 0, unit }, 0);
+				        new float[] { 0.1f, unit }, 0);
 				wrapper.setLineAttributes(Convert.toLineAttributes(s));
 				drawH(x1, x2, ym);
 			} else {
@@ -375,7 +374,7 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
 				unit = h / rep;
 				float xm = x1 + (w / 2);
 				BasicStroke s = new BasicStroke(w, BasicStroke.CAP_ROUND, BasicStroke.JOIN_MITER, 10.0f,
-				        new float[] { 0, unit }, 0);
+				        new float[] { 0.1f, unit }, 0);
 				wrapper.setLineAttributes(Convert.toLineAttributes(s));
 				drawV(xm, y1, y2);
 			}
@@ -496,7 +495,8 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
 			if (child instanceof WordArea) {
 				WordArea word = (WordArea) child;
 				String s = word.getWord();
-				wrapper.drawString(s, textCursor, y - 1 - font.getAscender() / 1000.0f, true);
+				wrapper.drawString(s, textCursor,
+				        y + 1.0f - font.getAscender() / 1000.0f + font.getDescender() / 1000.0f, true);
 				textCursor += wrapper.stringExtentWidth(s);
 			} else if (child instanceof SpaceArea) {
 				SpaceArea space = (SpaceArea) child;

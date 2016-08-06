@@ -24,8 +24,9 @@ import org.eclipse.swt.graphics.GC;
 public interface Printable {
 	/**
 	 * Render the printable to the given GC. If there is a transformation set on
-	 * to the GC then it will be applied to the rendering. This method leaves
-	 * the transformation unchanged, but any other property may be modified.
+	 * to the GC then it will be applied to the rendering. However this method
+	 * does not honor existing clipping region and draws over the entire GC.
+	 * This method returns any modified GC attribute by the time it returns.
 	 * 
 	 * @param gc
 	 *            target GC.
