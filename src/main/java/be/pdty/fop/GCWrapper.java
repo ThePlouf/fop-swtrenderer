@@ -51,9 +51,11 @@ import org.eclipse.swt.printing.Printer;
  * to null will reset it back to the transform at the time the wrapper got
  * created.
  * 
- * The wrapper will also "adopt" the clipping area at the time of creation and
- * will treat it as the maximum area for issuing drawing requests. Any addition
- * clipping request will be combined (intersected) with this base area.
+ * On Windows, the wrapper will also "adopt" the clipping area at the time of
+ * creation and will treat it as the maximum area for issuing drawing requests.
+ * Any addition clipping request will be combined (intersected) with this base
+ * area. On other platforms, due to limitations on the getClipping method, the
+ * initial clipping area is ignored and the entire GC is used for rendering.
  * 
  * Any GC property (Font, colors...) will be restored when the wrapper is
  * disposed.
@@ -102,6 +104,8 @@ public class GCWrapper {
 	private int baseInterpolation;
 	private Region baseClip;
 
+	private boolean windows;
+
 	/**
 	 * Create a new GCWrapper.
 	 * 
@@ -115,8 +119,10 @@ public class GCWrapper {
 		sx = gc.getDevice().getDPI().x / 72.0f;
 		sy = gc.getDevice().getDPI().y / 72.0f;
 
+		windows = System.getProperty("os.name").contains("Windows");//$NON-NLS-1$ //$NON-NLS-2$
+
 		// Temporary workaround for SWT bug 498062
-		if (gc.getDevice() instanceof Printer && System.getProperty("os.name").contains("Windows")) { //$NON-NLS-1$ //$NON-NLS-2$
+		if (gc.getDevice() instanceof Printer && windows) {
 			String sz = System.getProperty("org.eclipse.swt.internal.deviceZoom", "100"); //$NON-NLS-1$ //$NON-NLS-2$
 			float zoom;
 			try {
@@ -135,6 +141,9 @@ public class GCWrapper {
 
 		baseClip = new Region(gc.getDevice());
 		gc.getClipping(baseClip);
+		if (!windows) {
+			gc.setClipping((Rectangle) null);
+		}
 
 		baseFont = gc.getFont();
 		baseForeground = gc.getForeground();
@@ -212,46 +221,68 @@ public class GCWrapper {
 		}
 
 		if (dirtyClip) {
-			// Okay so this is quite complicated. We will try to merge the base
-			// clipping area with the requested area, but each of those are
-			// expressed using different transformation matrixes so we need to
-			// be careful not to get confused...
-			Region newRegion = new Region(gc.getDevice());
-			Region baseRegion = new Region(gc.getDevice());
-			Transform currentTransform = new Transform(gc.getDevice());
+			if (windows) {
+				// Okay so this is quite complicated. We will try to merge the
+				// base clipping area with
+				// the requested area, but each of those are expressed using
+				// different transformation
+				// matrixes so we need to be careful not to get confused...
+				Region newRegion = new Region(gc.getDevice());
+				Region baseRegion = new Region(gc.getDevice());
+				Transform currentTransform = new Transform(gc.getDevice());
 
-			Path swtClip = null;
-			if (clip != null) {
-				swtClip = new Path(gc.getDevice(), scale(clip));
-			}
-
-			try {
-				// Let's save the current transform as we will need to restore
-				// it back
-				gc.getTransform(currentTransform);
-
-				// First, we'll convert the requested path as a region
-				gc.setClipping(swtClip);
-				gc.getClipping(newRegion);
-
-				// Then we set the base clipping area using the base transform
-				gc.setTransform(baseTransform);
-				gc.setClipping(baseClip);
-
-				// Let's convert the base clipping area to the current transform
-				gc.setTransform(currentTransform);
-				gc.getClipping(baseRegion);
-
-				// Intersect them together and set the resulting region
-				newRegion.intersect(baseRegion);
-				gc.setClipping(newRegion);
-			} finally {
-				if (swtClip != null) {
-					swtClip.dispose();
+				Path swtClip = null;
+				if (clip != null) {
+					swtClip = new Path(gc.getDevice(), scale(clip));
 				}
-				baseRegion.dispose();
-				currentTransform.dispose();
-				newRegion.dispose();
+
+				try {
+					// Let's save the current transform as we will need to
+					// restore it back
+					gc.getTransform(currentTransform);
+
+					// First, we'll convert the requested path as a region
+					if (swtClip != null) {
+						gc.setClipping(swtClip);
+					} else {
+						gc.setClipping((Rectangle) null);
+					}
+					gc.getClipping(newRegion);
+
+					// Then we set the base clipping area using the base
+					// transform
+					gc.setTransform(baseTransform);
+					gc.setClipping(baseClip);
+
+					// Let's convert the base clipping area to the current
+					// transform
+					gc.setTransform(currentTransform);
+					gc.getClipping(baseRegion);
+
+					// Intersect them together and set the resulting region
+					newRegion.intersect(baseRegion);
+					gc.setClipping(newRegion);
+				} finally {
+					if (swtClip != null) {
+						swtClip.dispose();
+					}
+					baseRegion.dispose();
+					currentTransform.dispose();
+					newRegion.dispose();
+				}
+			} else {
+				if (clip != null) {
+					Path swtClip = new Path(gc.getDevice(), scale(clip));
+					try {
+						gc.setClipping(swtClip);
+					} finally {
+						swtClip.dispose();
+					}
+
+				} else {
+					gc.setClipping((Rectangle) null);
+				}
+
 			}
 
 			dirtyClip = false;
@@ -484,9 +515,15 @@ public class GCWrapper {
 		commit();
 		Rectangle b = image.getBounds();
 
+		if (!windows) {
+			gc.drawImage(image, b.x, b.y, b.width, b.height, (int) (x * PF), (int) (y * PF), (int) (b.width * PF),
+			        (int) (b.height * PF));
+			return;
+		}
+
 		// Disable clipping (not sure whether there is a bug with AWT or FOP but
-		// images are truncated when honoring clipping requests while drawing
-		// images)
+		// images are truncated when
+		// honoring clipping requests while drawing images)
 		Region currentRegion = new Region(gc.getDevice());
 		Transform currentTransform = new Transform(gc.getDevice());
 		try {
