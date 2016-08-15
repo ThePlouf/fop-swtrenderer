@@ -271,9 +271,9 @@ public class GCWrapper {
 					float a = rt * rt * rt;
 					float b = 3 * rt * rt * t;
 					float c = 3 * rt * t * t;
-					float d = t * t * t * t;
-					int x = (int) (a * x0 + b * x1 + 3 * c * x2 + d * x3);
-					int y = (int) (a * y0 + b * y1 + 3 * c * y2 + d * y3);
+					float d = t * t * t;
+					int x = (int) (a * x0 + b * x1 + c * x2 + d * x3);
+					int y = (int) (a * y0 + b * y1 + c * y2 + d * y3);
 					points.add(x);
 					points.add(y);
 				}
