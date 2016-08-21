@@ -475,9 +475,9 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
 
 		state.updateFont(tf.getFontName(), font.getFontSize());
 		Color col = (Color) text.getTrait(Trait.COLOR);
+		state.configureGC(wrapper);
 		wrapper.setColor(Convert.toRGBA(col));
 
-		state.configureGC(wrapper);
 		renderText(text, font, rx / 1000f, bl / 1000f);
 
 		currentIPPosition = saveIP + text.getAllocIPD();
