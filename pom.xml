@@ -3,9 +3,12 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>be.pdty.fop</groupId>
 	<artifactId>swtrenderer</artifactId>
-	<version>1.10</version>
+	<version>1.11</version>
 	<name>SWTRenderer</name>
 	<description>An FOP SWT Renderer</description>
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	</properties>
 	<repositories>
 		<repository>
 			<id>maven-eclipse-repo</id>
