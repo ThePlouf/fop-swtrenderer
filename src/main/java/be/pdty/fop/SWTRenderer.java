@@ -52,11 +52,13 @@ import org.apache.fop.fonts.Font;
 import org.apache.fop.fonts.FontCollection;
 import org.apache.fop.fonts.FontInfo;
 import org.apache.fop.fonts.FontManager;
+import org.apache.fop.fonts.FontMetrics;
 import org.apache.fop.fonts.Typeface;
 import org.apache.fop.fonts.base14.Base14FontCollection;
 import org.apache.fop.render.AbstractPathOrientedRenderer;
 import org.apache.fop.render.RendererContext;
 import org.apache.fop.render.pdf.CTMHelper;
+import org.apache.fop.traits.BorderProps;
 import org.apache.fop.util.ColorUtil;
 import org.apache.xmlgraphics.image.loader.ImageException;
 import org.apache.xmlgraphics.image.loader.ImageFlavor;
@@ -308,6 +310,52 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
 		float height = y2 - y1;
 		drawBorderLine(new Rectangle2D.Float(x1, y1, width, height), horz, startOrBefore, style, col);
 	}
+	
+  @Override
+  protected void drawBorders(Rectangle2D.Float borderRect,BorderProps bpsTop,BorderProps bpsBottom,BorderProps bpsLeft,BorderProps bpsRight,Color innerBackgroundColor)
+  {
+    if(bpsTop!=null && bpsBottom!=null && bpsLeft!=null && bpsRight!=null) {
+      if(bpsTop.equals(bpsBottom) && bpsLeft.equals(bpsRight) && bpsTop.equals(bpsRight)) {
+        if(!bpsTop.isCollapseOuter()) {
+
+          switch (bpsTop.style) {
+            case Constants.EN_DASHED:
+            case Constants.EN_DOTTED:
+            case Constants.EN_DOUBLE:
+            case Constants.EN_GROOVE:
+            case Constants.EN_RIDGE:
+            case Constants.EN_INSET:
+            case Constants.EN_OUTSET:
+            case Constants.EN_HIDDEN:
+              super.drawBorders(borderRect,bpsTop,bpsBottom,bpsLeft,bpsRight,innerBackgroundColor);
+              return;
+              
+            default:
+              // If this is a simple plain rectangle, we'll draw the object directly to improve the rendering
+              // quality for this specific (most common) case. This avoids the corners not lining up perfectly
+              // because of alpha blending etc.
+              float clipw=BorderProps.getClippedWidth(bpsTop)/1000f;
+              
+              float startx=borderRect.x+clipw;
+              float starty=borderRect.y+clipw;
+              float width=borderRect.width-clipw*2;
+              float height=borderRect.height-clipw*2;
+              
+              saveGraphicsState();
+              state.configureGC(wrapper);
+              wrapper.setLineAttributes(Convert.toLineAttributes(new BasicStroke(bpsTop.width/1000f)));
+              wrapper.setColor(Convert.toRGBA(bpsTop.color));
+              wrapper.drawRectangle(startx,starty,width,height);
+              restoreGraphicsState();
+
+              return;
+          }
+
+        }
+      }
+    }
+    super.drawBorders(borderRect,bpsTop,bpsBottom,bpsLeft,bpsRight,innerBackgroundColor);
+  }
 
 	private void drawBorderLine(Rectangle2D.Float lineRect, boolean horz, boolean startOrBefore, int style, Color col) {
 		float x1 = lineRect.x;
@@ -462,17 +510,53 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
 
 	}
 
+	/**
+	 * Override parent as SWT fonts behave slightly different than AWT ones. We'll draw the underline slightly
+	 * lower and the overline slightly higher.
+	 */
+	@Override
+  protected void renderTextDecoration(FontMetrics fm,int fontsize,InlineArea inline,int baseline,int startx)
+  {
+    boolean hasTextDeco=inline.hasUnderline()||inline.hasOverline()||inline.hasLineThrough();
+    if(hasTextDeco)
+    {
+      endTextObject();
+      float descender=fm.getDescender(fontsize)/1000f;
+      float capHeight=fm.getCapHeight(fontsize)/1000f;
+      float halfLineWidth = (descender / -8f) / 2f;
+      float endx=(startx+inline.getIPD())/1000f;
+      if(inline.hasUnderline())
+      {
+        Color ct=(Color)inline.getTrait(Trait.UNDERLINE_COLOR);
+        float y=baseline-descender;
+        drawBorderLine(startx/1000f,(y-halfLineWidth)/1000f,endx,(y+halfLineWidth)/1000f,true,true,Constants.EN_SOLID,ct);
+      }
+      if(inline.hasOverline())
+      {
+        Color ct=(Color)inline.getTrait(Trait.OVERLINE_COLOR);
+        float y=(float)(baseline-(1.2*capHeight));
+        drawBorderLine(startx/1000f,(y-halfLineWidth)/1000f,endx,(y+halfLineWidth)/1000f,true,true,Constants.EN_SOLID,ct);
+      }
+      if(inline.hasLineThrough())
+      {
+        Color ct=(Color)inline.getTrait(Trait.LINETHROUGH_COLOR);
+        float y=(float)(baseline-(0.45*capHeight));
+        drawBorderLine(startx/1000f,(y-halfLineWidth)/1000f,endx,(y+halfLineWidth)/1000f,true,true,Constants.EN_SOLID,ct);
+      }
+    }
+  }
+  
 	@Override
 	public void renderText(TextArea text) {
 		renderInlineAreaBackAndBorders(text);
 
 		int rx = currentIPPosition + text.getBorderAndPaddingWidthStart();
-		int bl = currentBPPosition + text.getBlockProgressionOffset() + text.getBaselineOffset();
+		int bl = currentBPPosition + text.getBaselineOffset();
 		int saveIP = currentIPPosition;
 
 		Font font = getFontFromArea(text);
 		Typeface tf = fontInfo.getFonts().get(font.getFontName());
-
+		
 		state.updateFont(tf.getFontName(), font.getFontSize());
 		Color col = (Color) text.getTrait(Trait.COLOR);
 		state.configureGC(wrapper);

@@ -406,6 +406,7 @@ public class GCWrapper {
 				copy.dash = new float[lineAttributes.dash.length];
 				for (int i = 0; i < lineAttributes.dash.length; i++) {
 					copy.dash[i] = lineAttributes.dash[i] * PF;
+					if(copy.dash[i]<=0) copy.dash[i]=1;
 				}
 			} else {
 				copy.dash = null;
@@ -566,6 +567,23 @@ public class GCWrapper {
 		gc.fillRectangle((int) (x * PF), (int) (y * PF), (int) (w * PF), (int) (h * PF));
 	}
 
+  /**
+   * Draw a rectangle with the given bounds.
+   * 
+   * @param x
+   *            x.
+   * @param y
+   *            y.
+   * @param w
+   *            width.
+   * @param h
+   *            height.
+   */
+  public void drawRectangle(float x, float y, float w, float h) {
+    commit();
+    gc.drawRectangle((int) (x * PF), (int) (y * PF), (int) (w * PF), (int) (h * PF));
+  }
+  
 	/**
 	 * Draw a line between the two given points.
 	 * 
