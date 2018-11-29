@@ -1,0 +1,796 @@
+<fo:root xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:doc="http://www.acrosoft.be/document">
+	<fo:layout-master-set>
+		<fo:simple-page-master margin="10mm 15mm 8mm 15mm"
+			master-name="PageMaster" page-height="210mm" page-width="297mm">
+			<fo:region-body margin="10mm 0mm 15mm 0mm" />
+			<fo:region-before extent="10mm" region-name="header" />
+			<fo:region-after extent="15mm" region-name="footer" />
+		</fo:simple-page-master>
+	</fo:layout-master-set>
+	<fo:page-sequence force-page-count="no-force" id="document-end-1"
+		initial-page-number="1" master-reference="PageMaster">
+		<fo:static-content flow-name="header">
+			<fo:block />
+		</fo:static-content>
+		<fo:static-content flow-name="footer">
+			<fo:block />
+		</fo:static-content>
+		<fo:flow flow-name="xsl-region-body">
+			<fo:block font-family="Helvetica, Arial" font-size="9.5pt"
+				page-height="210mm" page-width="297mm">
+				<fo:table border-collapse="collapse" border-spacing="-0.5pt"
+					border-style="solid" border-width="0pt" margin-left="0.2cm"
+					space-after="2mm" space-before="2mm" table-layout="fixed" width="100%">
+					<fo:table-body>
+						<fo:table-row border-collapse="collapse">
+							<fo:table-cell border-collapse="collapse"
+								border-style="solid" border-width="0pt" padding="5pt">
+								<fo:block>
+									<fo:external-graphic src="eyeAxisD">
+									</fo:external-graphic>
+								</fo:block>
+								<fo:block font-size="12pt" font-style="italic"
+									font-weight="bold" text-align-last="center">Annexe 15 (recto)</fo:block>
+								<fo:block font-weight="bold">A compléter par le titulaire ou
+									apposer une vignette de l'O.A.</fo:block>
+								<fo:block text-align-last="justify">
+									<fo:leader leader-pattern="rule" />
+								</fo:block>
+								<fo:block margin-top="0.4cm" text-align-last="justify">
+									Nom et prénom du bénéficiaire:
+									<fo:leader leader-pattern="dots" />
+								</fo:block>
+								<fo:block text-align-last="justify">
+									Organisme assureur:
+									<fo:leader leader-pattern="dots" />
+								</fo:block>
+								<fo:block text-align-last="justify">
+									Numéro d'identification de la Sécurité sociale (NISS):
+									<fo:leader leader-pattern="dots" />
+								</fo:block>
+								<fo:block margin-bottom="10pt" text-align-last="justify">
+									Adresse du titulaire:
+									<fo:leader leader-pattern="dots" />
+								</fo:block>
+								<fo:table border="solid 1pt" border-bottom="none"
+									border-collapse="separate" border-left="none" border-right="none"
+									border-spacing="-0.5pt" border-style="solid" margin="0pt"
+									padding="0pt" space-after="2mm" space-before="2mm"
+									table-layout="fixed" width="100%">
+									<fo:table-column column-number="1"
+										column-width="100%" />
+									<fo:table-body>
+										<fo:table-row border-collapse="collapse" margin="0pt"
+											padding="0pt">
+											<fo:table-cell border="solid 1pt"
+												border-collapse="collapse" border-left="none" border-right="none"
+												border-style="solid" border-width="1pt" margin="0pt"
+												padding="0pt">
+												<fo:block font-size="12pt" font-weight="bold"
+													text-align-last="center">ATTESTATION DE DELIVRANCE DESTINEE AUX
+													OPTICIENS</fo:block>
+											</fo:table-cell>
+										</fo:table-row>
+									</fo:table-body>
+								</fo:table>
+								<fo:block font-weight="bold" margin-bottom="0.3cm"
+									margin-top="0.2cm">A remplir par le dispensateur de soins</fo:block>
+								<fo:block text-align-last="justify">
+									Nom et prénom du patient:
+									<fo:inline font-family="Courier">Detournay Philippe</fo:inline>
+									<fo:leader leader-pattern="dots" />
+								</fo:block>
+								<fo:block margin-bottom="0pt" text-align-last="justify">
+									Date de naissance du patient:
+									<fo:inline font-family="Courier" />
+									<fo:leader leader-pattern="dots" />
+								</fo:block>
+								<fo:table border="solid 1pt" border-collapse="separate"
+									border-spacing="-0.5pt" border-style="solid" margin-top="0pt"
+									padding="1pt" space-after="2mm" space-before="2mm"
+									table-layout="fixed" width="100%">
+									<fo:table-column column-number="1"
+										column-width="6.8cm" />
+									<fo:table-column column-number="2"
+										column-width="2.5cm" />
+									<fo:table-column column-number="3"
+										column-width="2.3cm" />
+									<fo:table-column column-number="4"
+										column-width="2.5cm" />
+									<fo:table-column column-number="5"
+										column-width="2.5cm" />
+									<fo:table-column column-number="6"
+										column-width="2.5cm" />
+									<fo:table-column column-number="7"
+										column-width="2.3cm" />
+									<fo:table-column column-number="8"
+										column-width="2.5cm" />
+									<fo:table-column column-number="9"
+										column-width="2.5cm" />
+									<fo:table-body>
+										<fo:table-row border-collapse="collapse"
+											font-size="8.5pt">
+											<fo:table-cell border="solid 1pt"
+												border-collapse="collapse" border-style="solid"
+												border-width="1pt" padding="5pt" padding-left="1pt">
+												<fo:block text-align-last="center">Dénomination et quantité
+												</fo:block>
+											</fo:table-cell>
+											<fo:table-cell border="solid 1pt"
+												border-collapse="collapse" border-style="solid"
+												border-width="1pt" padding="5pt" padding-left="1pt">
+												<fo:block text-align-last="center">Numéro de la</fo:block>
+												<fo:block text-align-last="center">Nomenclature</fo:block>
+											</fo:table-cell>
+											<fo:table-cell border="solid 1pt"
+												border-collapse="collapse" border-style="solid"
+												border-width="1pt" padding="5pt" padding-left="1pt">
+												<fo:block text-align-last="center">Œil Gauche</fo:block>
+												<fo:block text-align-last="center">(OG) /</fo:block>
+												<fo:block text-align-last="center">Œil Droit</fo:block>
+												<fo:block margin-bottom="0pt" text-align-last="center">(OD)
+												</fo:block>
+											</fo:table-cell>
+											<fo:table-cell border="solid 1pt"
+												border-collapse="collapse" border-style="solid"
+												border-width="1pt" padding="5pt" padding-left="1pt">
+												<fo:block text-align-last="center">Prix</fo:block>
+												<fo:block text-align-last="center">réclamé</fo:block>
+											</fo:table-cell>
+											<fo:table-cell border="solid 1pt"
+												border-collapse="collapse" border-style="solid"
+												border-width="1pt" padding="5pt" padding-left="1pt">
+												<fo:block text-align-last="center">Prix</fo:block>
+												<fo:block text-align-last="center">Nomenclature</fo:block>
+											</fo:table-cell>
+											<fo:table-cell border="solid 1pt"
+												border-collapse="collapse" border-style="solid"
+												border-width="1pt" padding="5pt" padding-left="1pt">
+												<fo:block text-align-last="center">Intervention</fo:block>
+												<fo:block text-align-last="center">OA</fo:block>
+											</fo:table-cell>
+											<fo:table-cell border="solid 1pt"
+												border-collapse="collapse" border-style="solid"
+												border-width="1pt" padding="5pt" padding-left="1pt">
+												<fo:block text-align-last="center">Intervention</fo:block>
+												<fo:block text-align-last="center">Bénéficiaire</fo:block>
+												<fo:block text-align-last="center">Montant</fo:block>
+												<fo:block text-align-last="center">A.R. 21.1.94</fo:block>
+											</fo:table-cell>
+											<fo:table-cell border="solid 1pt"
+												border-collapse="collapse" border-style="solid"
+												border-width="1pt" padding="5pt" padding-left="1pt">
+												<fo:block text-align-last="center">Supplément</fo:block>
+												<fo:block text-align-last="center">pour le</fo:block>
+												<fo:block text-align-last="center">patient</fo:block>
+											</fo:table-cell>
+											<fo:table-cell border="solid 1pt"
+												border-collapse="collapse" border-style="solid"
+												border-width="1pt" padding="5pt" padding-left="1pt">
+												<fo:block text-align-last="center">Case réservée</fo:block>
+												<fo:block text-align-last="center">à l'O.A.</fo:block>
+											</fo:table-cell>
+										</fo:table-row>
+										<fo:table-row border-collapse="collapse">
+											<fo:table-cell border-collapse="collapse"
+												border-style="solid" border-width="1pt" margin-left="1pt"
+												padding="5pt" padding-left="1pt" padding-right="3pt"
+												padding-top="15pt">
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:inline font-family="Courier" font-size="8pt">1
+														Monture</fo:inline>
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:inline font-family="Courier" font-size="8pt">1
+														Verre Sphérique</fo:inline>
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:inline font-family="Courier" font-size="8pt">1
+														Verre Sphérique</fo:inline>
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+											</fo:table-cell>
+											<fo:table-cell border-collapse="collapse"
+												border-style="solid" border-width="1pt" margin-left="1pt"
+												padding="5pt" padding-left="1pt" padding-right="3pt"
+												padding-top="15pt" text-align="center">
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+													<fo:inline font-family="Courier" font-size="8pt">742711
+													</fo:inline>
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+													<fo:inline font-family="Courier" font-size="8pt">742475
+													</fo:inline>
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+													<fo:inline font-family="Courier" font-size="8pt">742475
+													</fo:inline>
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+											</fo:table-cell>
+											<fo:table-cell border-collapse="collapse"
+												border-style="solid" border-width="1pt" margin-left="1pt"
+												padding="5pt" padding-left="1pt" padding-right="3pt"
+												padding-top="15pt" text-align="center">
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+													<fo:inline font-family="Courier" font-size="8pt" />
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+													<fo:inline font-family="Courier" font-size="8pt">OD
+													</fo:inline>
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+													<fo:inline font-family="Courier" font-size="8pt">OG
+													</fo:inline>
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+											</fo:table-cell>
+											<fo:table-cell border-collapse="collapse"
+												border-style="solid" border-width="1pt" margin-left="1pt"
+												padding="5pt" padding-left="1pt" padding-right="3pt"
+												padding-top="15pt" text-align="center">
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+													<fo:inline font-family="Courier" font-size="8pt">0
+													</fo:inline>
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+													<fo:inline font-family="Courier" font-size="8pt">0
+													</fo:inline>
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+													<fo:inline font-family="Courier" font-size="8pt">0
+													</fo:inline>
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+											</fo:table-cell>
+											<fo:table-cell border-collapse="collapse"
+												border-style="solid" border-width="1pt" margin-left="1pt"
+												padding="5pt" padding-left="1pt" padding-right="3pt"
+												padding-top="15pt" text-align="center">
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+													<fo:inline font-family="Courier" font-size="8pt">28
+													</fo:inline>
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+													<fo:inline font-family="Courier" font-size="8pt">134
+													</fo:inline>
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+													<fo:inline font-family="Courier" font-size="8pt">134
+													</fo:inline>
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+											</fo:table-cell>
+											<fo:table-cell border-collapse="collapse"
+												border-style="solid" border-width="1pt" margin-left="1pt"
+												padding="5pt" padding-left="1pt" padding-right="3pt"
+												padding-top="15pt">
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+													<fo:inline font-family="Courier" font-size="8pt">28
+													</fo:inline>
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+													<fo:inline font-family="Courier" font-size="8pt">134
+													</fo:inline>
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+													<fo:inline font-family="Courier" font-size="8pt">134
+													</fo:inline>
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+											</fo:table-cell>
+											<fo:table-cell border-collapse="collapse"
+												border-style="solid" border-width="1pt" margin-left="1pt"
+												padding="5pt" padding-left="1pt" padding-right="3pt"
+												padding-top="15pt">
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+													<fo:inline font-family="Courier" font-size="8pt">NON
+													</fo:inline>
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+													<fo:inline font-family="Courier" font-size="8pt">NON
+													</fo:inline>
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+													<fo:inline font-family="Courier" font-size="8pt">NON
+													</fo:inline>
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+											</fo:table-cell>
+											<fo:table-cell border-collapse="collapse"
+												border-style="solid" border-width="1pt" margin-left="1pt"
+												padding="5pt" padding-left="1pt" padding-right="3pt"
+												padding-top="15pt">
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+													<fo:inline font-family="Courier" font-size="8pt">0
+													</fo:inline>
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+													<fo:inline font-family="Courier" font-size="8pt">0
+													</fo:inline>
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+													<fo:inline font-family="Courier" font-size="8pt">0
+													</fo:inline>
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+											</fo:table-cell>
+											<fo:table-cell border-collapse="collapse"
+												border-style="solid" border-width="1pt" margin-left="1pt"
+												padding="5pt" padding-left="1pt" padding-right="3pt"
+												padding-top="15pt">
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+												<fo:block padding-bottom="3pt" text-align-last="justify">
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+											</fo:table-cell>
+										</fo:table-row>
+									</fo:table-body>
+								</fo:table>
+								<fo:block margin-bottom="0pt" text-align-last="justify">
+									Date de délivrance:
+									<fo:inline font-family="Courier">04/07/2016</fo:inline>
+									<fo:leader leader-pattern="dots" />
+								</fo:block>
+								<fo:block font-size="12pt" font-style="italic"
+									font-weight="bold" page-break-before="always" text-align-last="center">Annexe
+									15 (verso)</fo:block>
+								<fo:block margin-top="5pt" text-align-last="justify">
+									Nom de l'ophtalmologue:
+									<fo:inline font-family="Courier">Docteur Schok</fo:inline>
+									<fo:leader leader-pattern="dots" />
+								</fo:block>
+								<fo:block text-align-last="justify">
+									Date de la prescription:
+									<fo:inline font-family="Courier">le 04/04/2004</fo:inline>
+									<fo:leader leader-pattern="dots" />
+								</fo:block>
+								<fo:block text-align-last="justify">
+									N° d'identification I.N.A.M.I.:
+									<fo:inline font-family="Courier" />
+									<fo:leader leader-pattern="dots" />
+								</fo:block>
+								<fo:block>Autorisation du médecin-conseil en date du:
+									......../......../........ (à remplir si d'application)
+								</fo:block>
+								<fo:block text-align-last="justify">
+									<fo:leader leader-pattern="rule" />
+								</fo:block>
+								<fo:block margin-top="3pt" text-align-last="justify">
+									Pour les patients hospitalisés: N° de l'institution:
+									.................................. Service:
+									<fo:leader leader-pattern="dots" />
+								</fo:block>
+								<fo:block text-align-last="justify">
+									<fo:leader leader-pattern="rule" />
+								</fo:block>
+								<fo:block margin-top="3pt" text-align-last="justify">
+									Nom et prénom du dispensateur de soins:
+									<fo:inline font-family="Courier">Docteur MachinTruc</fo:inline>
+									<fo:leader leader-pattern="dots" />
+								</fo:block>
+								<fo:block text-align-last="justify">
+									N° d'identification IN.A.M.I.:
+									<fo:inline font-family="Courier">4-46548-14-123</fo:inline>
+									<fo:leader leader-pattern="dots" />
+								</fo:block>
+								<fo:block text-align-last="justify">
+									Nom et adresse de l'entreprise:
+									<fo:inline font-family="Courier">Votre magasin Votre rue, XX
+										XXXX Ville</fo:inline>
+									<fo:leader leader-pattern="dots" />
+								</fo:block>
+								<fo:block text-align-last="justify">
+									Numéro d'entreprise:
+									<fo:inline font-family="Courier">0123-456-789</fo:inline>
+									<fo:leader leader-pattern="dots" />
+								</fo:block>
+								<fo:block text-align-last="justify">
+									<fo:leader leader-pattern="rule" />
+								</fo:block>
+								<fo:block font-weight="bold" margin-bottom="5pt"
+									margin-top="5pt">A remplir par le bénéficiaire:</fo:block>
+								<fo:block text-align-last="justify">
+									Je certifie avoir reçu la(les) prestations(s) susmentionnée(s):
+									n°
+									<fo:inline font-family="Courier" font-size="8pt">742711
+									</fo:inline>
+									<fo:inline font-family="Courier" font-size="8pt">742475
+									</fo:inline>
+									<fo:inline font-family="Courier" font-size="8pt">742475
+									</fo:inline>
+									<fo:leader leader-pattern="dots" />
+								</fo:block>
+								<fo:block>
+									Je certifie avoir été clairement informé(e) par l'opticien du
+									fait que je dois payer un montant total de
+									<fo:inline font-family="Courier">0</fo:inline>
+									Euro, dont
+									<fo:inline font-family="Courier">0</fo:inline>
+									Euro qui sont des suppléments entièrement à ma charge.
+								</fo:block>
+								<fo:block>Je certifie avoir été clairement informé(e) par
+									l'opticien de la possibilité de recevoir des verres de bonne
+									qualité optique au tarif du remboursement.</fo:block>
+								<fo:table border-collapse="collapse" border-spacing="-0.5pt"
+									border-style="solid" border-width="0pt" margin-left="0pt"
+									padding-bottom="0pt" padding-left="0pt" space-after="2mm"
+									space-before="2mm" table-layout="fixed" width="100%">
+									<fo:table-column column-number="1"
+										column-width="40%" />
+									<fo:table-column column-number="2"
+										column-width="60%" />
+									<fo:table-body>
+										<fo:table-row border-collapse="collapse"
+											padding-bottom="0pt">
+											<fo:table-cell border-collapse="collapse"
+												border-style="solid" border-width="0pt" margin-left="0pt"
+												padding="5pt" padding-bottom="0pt" padding-left="0pt">
+												<fo:block>
+													Date:
+													<fo:inline font-family="Courier">04/07/2016</fo:inline>
+												</fo:block>
+											</fo:table-cell>
+											<fo:table-cell border-collapse="collapse"
+												border-style="solid" border-width="0pt" padding="5pt"
+												padding-bottom="0pt" padding-left="0pt">
+												<fo:block text-align-last="justify">
+													Nom et Signature:
+													<fo:inline font-family="Courier">Detournay Philippe
+													</fo:inline>
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+											</fo:table-cell>
+										</fo:table-row>
+									</fo:table-body>
+								</fo:table>
+								<fo:block text-align-last="justify">
+									<fo:leader leader-pattern="rule" />
+								</fo:block>
+								<fo:block padding-bottom="3pt" padding-top="2pt">En cas de
+									tiers payant, la présente est payable par l'organisme assureur
+									au compte
+									n°............-.....................................-....................
+								</fo:block>
+								<fo:table border="solid 1pt" border-bottom="none"
+									border-collapse="collapse" border-left="none" border-right="none"
+									border-spacing="-0.5pt" border-style="solid" space-after="2mm"
+									space-before="2mm" table-layout="fixed" width="100%">
+									<fo:table-column column-number="1"
+										column-width="38%" />
+									<fo:table-column column-number="2"
+										column-width="62%" />
+									<fo:table-body>
+										<fo:table-row border-collapse="collapse">
+											<fo:table-cell border="solid 1pt"
+												border-bottom="none" border-collapse="collapse" border-left="none"
+												border-style="solid" border-top="none" border-width="1pt"
+												margin-left="0pt" padding="2pt" padding-left="0pt">
+												<fo:block>Cadre réservé à l'O.A.</fo:block>
+											</fo:table-cell>
+											<fo:table-cell border-collapse="collapse"
+												border-style="solid" border-width="0pt" padding="2pt">
+												<fo:block margin-bottom="0pt">Je confirme avoir
+													personnellemment effectivement essayé, adapté et délivré la
+													(les) prestation(s) susmentionnée(s). (1)</fo:block>
+												<fo:block margin-bottom="0pt">Je confirme avoir
+													suffisamment informé le bénéficiaire sur la possibilité de
+													recevoir des verres de bonne qualité optique au tarif du
+													remboursement.</fo:block>
+												<fo:block>
+													<fo:inline> </fo:inline>
+												</fo:block>
+												<fo:block font-style="italic" margin-bottom="0pt"
+													margin-top="0pt">(1) Le mot "adapté" est, dans le cas de
+													lentilles de contact, à supprimer si l'opticien n'a pas
+													réalisé l'adaptation.</fo:block>
+												<fo:block>
+													<fo:inline> </fo:inline>
+												</fo:block>
+												<fo:block>
+													Date:
+													<fo:inline font-family="Courier">04/07/2016</fo:inline>
+												</fo:block>
+												<fo:block text-align-last="justify">
+													Nom et signature du dispensateur de soins:
+													<fo:inline font-family="Courier">Docteur MachinTruc
+													</fo:inline>
+													<fo:leader leader-pattern="dots" />
+												</fo:block>
+											</fo:table-cell>
+										</fo:table-row>
+									</fo:table-body>
+								</fo:table>
+							</fo:table-cell>
+						</fo:table-row>
+					</fo:table-body>
+				</fo:table>
+			</fo:block>
+		</fo:flow>
+	</fo:page-sequence>
+</fo:root>
