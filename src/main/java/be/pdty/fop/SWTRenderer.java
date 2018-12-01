@@ -311,46 +311,59 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
 		drawBorderLine(new Rectangle2D.Float(x1, y1, width, height), horz, startOrBefore, style, col);
 	}
 	
+	private boolean same(BorderProps a,BorderProps b) {
+	  if(a==b) return true;
+	  if(a==null || b==null) return false;
+	  
+	  if(!a.color.equals(b.color)) return false;
+	  if(a.style!=b.style) return false;
+	  if(a.width!=b.width) return false;
+	  if(a.getRadiusEnd()!=b.getRadiusEnd()) return false;
+	  if(a.getRadiusStart()!=b.getRadiusStart()) return false;
+	  
+	  //We don't look at the collapsing as we're only interested at full rectangles
+	  
+	  return true;
+	}
+	
   @Override
   protected void drawBorders(Rectangle2D.Float borderRect,BorderProps bpsTop,BorderProps bpsBottom,BorderProps bpsLeft,BorderProps bpsRight,Color innerBackgroundColor)
   {
+    if(bpsTop==null && bpsBottom==null && bpsLeft==null && bpsRight==null) return;
+    
     if(bpsTop!=null && bpsBottom!=null && bpsLeft!=null && bpsRight!=null) {
-      if(bpsTop.equals(bpsBottom) && bpsLeft.equals(bpsRight) && bpsTop.equals(bpsRight)) {
-        if(!bpsTop.isCollapseOuter()) {
+      if(same(bpsTop,bpsBottom) && same(bpsLeft,bpsRight) && same(bpsTop,bpsRight)) {
+        switch (bpsTop.style) {
+          case Constants.EN_DASHED:
+          case Constants.EN_DOTTED:
+          case Constants.EN_DOUBLE:
+          case Constants.EN_GROOVE:
+          case Constants.EN_RIDGE:
+          case Constants.EN_INSET:
+          case Constants.EN_OUTSET:
+          case Constants.EN_HIDDEN:
+            super.drawBorders(borderRect,bpsTop,bpsBottom,bpsLeft,bpsRight,innerBackgroundColor);
+            return;
+            
+          default:
+            // If this is a simple plain rectangle, we'll draw the object directly to improve the rendering
+            // quality for this specific (most common) case. This avoids the corners not lining up perfectly
+            // because of alpha blending etc.
+            float clipw=BorderProps.getClippedWidth(bpsTop)/1000f;
+            
+            float startx=borderRect.x+clipw;
+            float starty=borderRect.y+clipw;
+            float width=borderRect.width-clipw*2;
+            float height=borderRect.height-clipw*2;
+            
+            saveGraphicsState();
+            state.configureGC(wrapper);
+            wrapper.setLineAttributes(Convert.toLineAttributes(new BasicStroke(bpsTop.width/1000f)));
+            wrapper.setColor(Convert.toRGBA(bpsTop.color));
+            wrapper.drawRectangle(startx,starty,width,height);
+            restoreGraphicsState();
 
-          switch (bpsTop.style) {
-            case Constants.EN_DASHED:
-            case Constants.EN_DOTTED:
-            case Constants.EN_DOUBLE:
-            case Constants.EN_GROOVE:
-            case Constants.EN_RIDGE:
-            case Constants.EN_INSET:
-            case Constants.EN_OUTSET:
-            case Constants.EN_HIDDEN:
-              super.drawBorders(borderRect,bpsTop,bpsBottom,bpsLeft,bpsRight,innerBackgroundColor);
-              return;
-              
-            default:
-              // If this is a simple plain rectangle, we'll draw the object directly to improve the rendering
-              // quality for this specific (most common) case. This avoids the corners not lining up perfectly
-              // because of alpha blending etc.
-              float clipw=BorderProps.getClippedWidth(bpsTop)/1000f;
-              
-              float startx=borderRect.x+clipw;
-              float starty=borderRect.y+clipw;
-              float width=borderRect.width-clipw*2;
-              float height=borderRect.height-clipw*2;
-              
-              saveGraphicsState();
-              state.configureGC(wrapper);
-              wrapper.setLineAttributes(Convert.toLineAttributes(new BasicStroke(bpsTop.width/1000f)));
-              wrapper.setColor(Convert.toRGBA(bpsTop.color));
-              wrapper.drawRectangle(startx,starty,width,height);
-              restoreGraphicsState();
-
-              return;
-          }
-
+            return;
         }
       }
     }
