@@ -59,6 +59,7 @@ import org.apache.fop.render.AbstractPathOrientedRenderer;
 import org.apache.fop.render.RendererContext;
 import org.apache.fop.render.pdf.CTMHelper;
 import org.apache.fop.traits.BorderProps;
+import org.apache.fop.traits.BorderProps.Mode;
 import org.apache.fop.util.ColorUtil;
 import org.apache.xmlgraphics.image.loader.ImageException;
 import org.apache.xmlgraphics.image.loader.ImageFlavor;
@@ -311,63 +312,163 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
 		drawBorderLine(new Rectangle2D.Float(x1, y1, width, height), horz, startOrBefore, style, col);
 	}
 	
-	private boolean same(BorderProps a,BorderProps b) {
-	  if(a==b) return true;
-	  if(a==null || b==null) return false;
+	private static class Rect {
+	  float x;
+	  float y;
+	  float w;
+	  float h;
 	  
-	  if(!a.color.equals(b.color)) return false;
-	  if(a.style!=b.style) return false;
-	  if(a.width!=b.width) return false;
-	  if(a.getRadiusEnd()!=b.getRadiusEnd()) return false;
-	  if(a.getRadiusStart()!=b.getRadiusStart()) return false;
-	  
-	  //We don't look at the collapsing as we're only interested at full rectangles
-	  
-	  return true;
+	  public Rect(float left,float top,float width,float height) {
+	    x=left;
+	    y=top;
+	    w=width;
+	    h=height;
+	  }
 	}
+	
+	private static boolean outer(BorderProps a) {
+	  if(a.style==Constants.EN_NONE) return false;
+	  if(a.isCollapseOuter()) return true;
+	  if(BorderProps.getClippedWidth(a)==0) return true;
+	  return false;
+	}
+	
+	private static boolean canDraw(BorderProps a) {
+	  return a==null || a.style==Constants.EN_NONE || a.style==Constants.EN_SOLID || a.style==Constants.EN_DASHED || a.style==Constants.EN_DOTTED;
+	}
+	
+	private BasicStroke getStroke(BorderProps p) {
+	  float width=p.width/1000f;
+    float unit = Math.abs(4 * width);
+
+    switch(p.style) {
+      case Constants.EN_DOTTED:
+        return new BasicStroke(width, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 10.0f, new float[] { unit/4.0f, unit/2.0f }, 0);
+	    case Constants.EN_DASHED:
+        return new BasicStroke(width, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 10.0f, new float[] { unit, unit }, 0);
+	    case Constants.EN_SOLID:
+	    default:
+	      return new BasicStroke(width,BasicStroke.CAP_BUTT,BasicStroke.JOIN_MITER);
+	  }
+	}
+	
+	private static Color BLACK=new Color(0,0,0);
 	
   @Override
   protected void drawBorders(Rectangle2D.Float borderRect,BorderProps bpsTop,BorderProps bpsBottom,BorderProps bpsLeft,BorderProps bpsRight,Color innerBackgroundColor)
   {
-    if(bpsTop==null && bpsBottom==null && bpsLeft==null && bpsRight==null) return;
+    if(!canDraw(bpsTop) || !canDraw(bpsBottom) || !canDraw(bpsLeft) || !canDraw(bpsRight)) {
+      super.drawBorders(borderRect,bpsTop,bpsBottom,bpsLeft,bpsRight,innerBackgroundColor);
+      return;
+    }
     
-    if(bpsTop!=null && bpsBottom!=null && bpsLeft!=null && bpsRight!=null) {
-      if(same(bpsTop,bpsBottom) && same(bpsLeft,bpsRight) && same(bpsTop,bpsRight)) {
-        switch (bpsTop.style) {
-          case Constants.EN_DASHED:
-          case Constants.EN_DOTTED:
-          case Constants.EN_DOUBLE:
-          case Constants.EN_GROOVE:
-          case Constants.EN_RIDGE:
-          case Constants.EN_INSET:
-          case Constants.EN_OUTSET:
-          case Constants.EN_HIDDEN:
-            super.drawBorders(borderRect,bpsTop,bpsBottom,bpsLeft,bpsRight,innerBackgroundColor);
-            return;
-            
-          default:
-            // If this is a simple plain rectangle, we'll draw the object directly to improve the rendering
-            // quality for this specific (most common) case. This avoids the corners not lining up perfectly
-            // because of alpha blending etc.
-            float clipw=BorderProps.getClippedWidth(bpsTop)/1000f;
-            
-            float startx=borderRect.x+clipw;
-            float starty=borderRect.y+clipw;
-            float width=borderRect.width-clipw*2;
-            float height=borderRect.height-clipw*2;
-            
-            saveGraphicsState();
-            state.configureGC(wrapper);
-            wrapper.setLineAttributes(Convert.toLineAttributes(new BasicStroke(bpsTop.width/1000f)));
-            wrapper.setColor(Convert.toRGBA(bpsTop.color));
-            wrapper.drawRectangle(startx,starty,width,height);
-            restoreGraphicsState();
+    if(bpsTop==null) bpsTop=new BorderProps(Constants.EN_NONE,0,0,0,BLACK,Mode.SEPARATE);
+    if(bpsBottom==null) bpsBottom=new BorderProps(Constants.EN_NONE,0,0,0,BLACK,Mode.SEPARATE);
+    if(bpsLeft==null) bpsLeft=new BorderProps(Constants.EN_NONE,0,0,0,BLACK,Mode.SEPARATE);
+    if(bpsRight==null) bpsRight=new BorderProps(Constants.EN_NONE,0,0,0,BLACK,Mode.SEPARATE);
+    
+    // If border is separate, clip will be 0.
+    // If border is part of a group of borders, then it will be set to half the line width.
+    float clipLeft=BorderProps.getClippedWidth(bpsLeft)/1000f;
+    float clipRight=BorderProps.getClippedWidth(bpsRight)/1000f;
+    float clipTop=BorderProps.getClippedWidth(bpsTop)/1000f;
+    float clipBottom=BorderProps.getClippedWidth(bpsBottom)/1000f;
 
-            return;
-        }
+    Rect middle=new Rect(
+        borderRect.x+clipLeft,
+        borderRect.y+clipTop,
+        borderRect.width-clipLeft-clipRight,
+        borderRect.height-clipTop-clipBottom
+        );
+    
+    float widthLeft=bpsLeft.width/1000f;
+    float widthRight=bpsRight.width/1000f;
+    float widthTop=bpsTop.width/1000f;
+    float widthBottom=bpsBottom.width/1000f;
+    
+    // If we are inner cells, we want to slightly widen the area to have our borders collapse
+    // with the side ones.
+    if(!bpsLeft.isCollapseOuter()) {
+      middle.x-=clipLeft-widthLeft/2;
+      middle.w+=clipLeft-widthLeft/2;
+    }
+    
+    if(!bpsRight.isCollapseOuter()) {
+      middle.w+=clipRight-widthRight/2;
+    }
+    
+    if(!bpsTop.isCollapseOuter()) {
+      middle.y-=clipTop-widthTop/2;
+      middle.h+=clipTop-widthTop/2;
+    }
+    
+    if(!bpsBottom.isCollapseOuter()) {
+      middle.h+=clipBottom-widthBottom/2;
+    }
+    
+    saveGraphicsState();
+    state.configureGC(wrapper);
+
+    if(widthTop==widthBottom && widthBottom==widthLeft && widthLeft==widthRight && widthRight==widthTop &&
+        bpsTop.style==Constants.EN_SOLID && bpsBottom.style==Constants.EN_SOLID && bpsLeft.style==Constants.EN_SOLID && bpsRight.style==Constants.EN_SOLID &&
+        bpsTop.color.equals(bpsBottom.color) && bpsBottom.color.equals(bpsLeft.color) && bpsLeft.color.equals(bpsRight.color) && bpsRight.color.equals(bpsTop.color)) {
+
+      // This is a plain full rectangle
+      wrapper.setColor(Convert.toRGBA(bpsTop.color));
+      wrapper.setLineAttributes(Convert.toLineAttributes(new BasicStroke(widthTop)));
+      wrapper.drawRectangle(middle.x,middle.y,middle.w,middle.h);
+    } else {
+      Rect outer=new Rect(middle.x-widthLeft/2,middle.y-widthTop/2,middle.w+widthLeft/2+widthRight/2,middle.h+widthTop/2+widthBottom/2);
+      
+      // In a perfect world, this would be unnecessary. In practice we give some margin to our lines when they intersect with
+      // other cells in order to avoid overdrawing.
+      float adjust=0.1f;
+      
+      //Top
+      if(bpsTop.style!=Constants.EN_NONE) {
+        wrapper.setColor(Convert.toRGBA(bpsTop.color));
+        wrapper.setLineAttributes(Convert.toLineAttributes(getStroke(bpsTop)));
+        float left=outer.x;
+        float right=outer.x+outer.w;
+        if(outer(bpsLeft)) left+=adjust;
+        if(outer(bpsRight)) right-=adjust;
+        wrapper.drawLine(left,middle.y,right,middle.y);
+      }
+
+      //Bottom
+      if(bpsBottom.style!=Constants.EN_NONE) {
+        wrapper.setColor(Convert.toRGBA(bpsBottom.color));
+        wrapper.setLineAttributes(Convert.toLineAttributes(getStroke(bpsBottom)));
+        float left=outer.x;
+        float right=outer.x+outer.w;
+        if(outer(bpsLeft)) left+=adjust;
+        if(outer(bpsRight)) right-=adjust;
+        wrapper.drawLine(left,middle.y+middle.h,right,middle.y+middle.h);
+      }
+
+      //Left
+      if(bpsLeft.style!=Constants.EN_NONE) {
+        wrapper.setColor(Convert.toRGBA(bpsLeft.color));
+        wrapper.setLineAttributes(Convert.toLineAttributes(getStroke(bpsLeft)));
+        float top=outer.y;
+        float bottom=outer.y+outer.h;
+        if(outer(bpsTop)) top+=adjust;
+        if(outer(bpsBottom)) bottom-=adjust;
+        wrapper.drawLine(middle.x,top,middle.x,bottom);
+      }
+
+      //Right
+      if(bpsRight.style!=Constants.EN_NONE) {
+        wrapper.setColor(Convert.toRGBA(bpsRight.color));
+        wrapper.setLineAttributes(Convert.toLineAttributes(getStroke(bpsRight)));
+        float top=outer.y;
+        float bottom=outer.y+outer.h;
+        if(outer(bpsTop)) top+=adjust;
+        if(outer(bpsBottom)) bottom-=adjust;
+        wrapper.drawLine(middle.x+middle.w,top,middle.x+middle.w,bottom);
       }
     }
-    super.drawBorders(borderRect,bpsTop,bpsBottom,bpsLeft,bpsRight,innerBackgroundColor);
+    restoreGraphicsState();
   }
 
 	private void drawBorderLine(Rectangle2D.Float lineRect, boolean horz, boolean startOrBefore, int style, Color col) {
