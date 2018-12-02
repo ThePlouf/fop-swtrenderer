@@ -70,9 +70,11 @@ import org.apache.xmlgraphics.image.loader.impl.ImageGraphics2D;
 import org.apache.xmlgraphics.image.loader.impl.ImageRendered;
 import org.apache.xmlgraphics.image.loader.impl.ImageXMLDOM;
 import org.apache.xmlgraphics.image.loader.util.ImageUtil;
+import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.PaletteData;
+import org.eclipse.swt.graphics.PathData;
 
 /**
  * SWTRenderer. Compared to the AWTRenderer, the SWTRenderer has the following
@@ -368,15 +370,56 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
         Color lowercol = ColorUtil.lightenColor(props.color, colFactor);
         
         wrapper.setColor(Convert.toRGBA(uppercol));
-        //Opportunity to use a shape
-        wrapper.drawLine(leftMost,topMost+weight/6,leftMost+w+weight*2/3,topMost+weight/6);
-        wrapper.drawLine(leftMost+weight/6,topMost+weight*1f/6f,leftMost+weight/6,topMost+h+weight);
+        PathData path=new PathData();
+        path.types=new byte[] {
+            SWT.PATH_MOVE_TO,
+            SWT.PATH_LINE_TO,
+            SWT.PATH_LINE_TO,
+            SWT.PATH_LINE_TO,
+            SWT.PATH_LINE_TO,
+            SWT.PATH_LINE_TO,
+            SWT.PATH_CLOSE};
+
+        path.points=new float[] {
+            leftMost,topMost,
+            leftMost+w+weight,topMost,
+            leftMost+w+2*weight/3,topMost+weight/3,
+            leftMost+weight/3,topMost+weight/3,
+            leftMost+weight/3,topMost+h+weight*2/3,
+            leftMost,topMost+h+weight
+        };
+        wrapper.fillPath(path);
+        path.points=new float[] {
+            leftMost+w+weight/3,topMost+2*weight/3,
+            leftMost+w,topMost+weight,
+            leftMost+w,topMost+h,
+            leftMost+weight,topMost+h,
+            leftMost+2*weight/3,topMost+h+weight/3,
+            leftMost+w+weight/3,topMost+h+weight/3
+        };
+        wrapper.fillPath(path);
         
         wrapper.setColor(Convert.toRGBA(lowercol));
-        //Opportunity to use a shape
-        wrapper.drawLine(leftMost+2*weight/6,topMost+h+5*weight/6,leftMost+w+weight*2/3,topMost+h+5*weight/6);
-        wrapper.drawLine(leftMost+w+5*weight/6,topMost,leftMost+w+5*weight/6,topMost+h+weight);
+        path.points=new float[] {
+            leftMost+w+weight,topMost,
+            leftMost+w+2*weight/3,topMost+weight/3,
+            leftMost+w+2*weight/3,topMost+h+2*weight/3,
+            leftMost+weight/3,topMost+h+2*weight/3,
+            leftMost,topMost+h+weight,
+            leftMost+w+weight,topMost+h+weight
+        };
+        wrapper.fillPath(path);
+        path.points=new float[] {
+            leftMost+2*weight/3,topMost+2*weight/3,
+            leftMost+w+weight/3,topMost+2*weight/3,
+            leftMost+w,topMost+weight,
+            leftMost+weight,topMost+weight,
+            leftMost+weight,topMost+h,
+            leftMost+2*weight/3,topMost+h+weight/3
+        };
+        wrapper.fillPath(path);
         
+        wrapper.setLineAttributes(Convert.toLineAttributes(getStroke(props,1.5f/3f)));
         wrapper.setColor(Convert.toRGBA(props.color));
         wrapper.drawRectangle(x,y,w,h);
         break;
@@ -389,13 +432,37 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
         Color uppercol = ColorUtil.lightenColor(props.color, -colFactor);
         Color lowercol = ColorUtil.lightenColor(props.color, colFactor);
         wrapper.setColor(Convert.toRGBA(lowercol));
-        //Opportunity to use a shape
-        wrapper.drawLine(x-weight/2,y,x+w+weight/2,y);
-        wrapper.drawLine(x,y+weight/2,x,y+h-weight/2);
+        PathData path=new PathData();
+        path.types=new byte[] {
+            SWT.PATH_MOVE_TO,
+            SWT.PATH_LINE_TO,
+            SWT.PATH_LINE_TO,
+            SWT.PATH_LINE_TO,
+            SWT.PATH_LINE_TO,
+            SWT.PATH_LINE_TO,
+            SWT.PATH_CLOSE};
+        path.points=new float[] {
+            x-weight/2,y-weight/2,
+            x+w+weight/2,y-weight/2,
+            x+w-weight/2,y+weight/2,
+            x+weight/2,y+weight/2,
+            x+weight/2,y+h-weight/2,
+            x-weight/2,y+h+weight/2};
+        wrapper.fillPath(path);
+        
         wrapper.setColor(Convert.toRGBA(uppercol));
-        //Opportunity to use a shape
-        wrapper.drawLine(x-weight/2,y+h,x+w+weight/2,y+h);
-        wrapper.drawLine(x+w,y+weight/2,x+w,y+h-weight/2);
+        path.points=new float[] {
+            x+w+weight/2,y-weight/2,
+            x+w-weight/2,y+weight/2,
+            x+w-weight/2,y+h-weight/2,
+            x+weight/2,y+h-weight/2,
+            x-weight/2,y+h+weight/2,
+            x+w+weight/2,y+h+weight/2
+            
+        };
+        
+        wrapper.fillPath(path);
+        
         break;
       }
       case Constants.EN_DOTTED:
