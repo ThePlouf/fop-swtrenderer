@@ -342,7 +342,7 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
 	}
 	
 	//Draw a rectangle from x,y and of size w,h as chord.
-	private void drawRectangle(float x,float y,float w,float h,BorderProps props) {
+	private void drawRectangle(float x,float y,float w,float h,BorderProps props,boolean fill) {
     switch(props.style) {
       case Constants.EN_HIDDEN:
       case Constants.EN_NONE:
@@ -406,6 +406,12 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
         wrapper.setLineAttributes(Convert.toLineAttributes(getStroke(props)));
         wrapper.drawRectangle(x,y,w,h);
         break;
+    }
+    
+    if(fill && props.style!=Constants.EN_HIDDEN && props.style!=Constants.EN_NONE) {
+      wrapper.setColor(Convert.toRGBA(props.color));
+      float weight=props.width/1000f;
+      wrapper.fillRectangle(x+weight/2,y+weight/2,w-weight,h-weight);
     }
 	}
 	
@@ -580,7 +586,7 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
     if(widthTop==widthBottom && widthBottom==widthLeft && widthLeft==widthRight && widthRight==widthTop &&
         bpsTop.style==bpsBottom.style && bpsBottom.style==bpsLeft.style && bpsLeft.style==bpsRight.style && bpsRight.style==bpsTop.style &&
         bpsTop.color.equals(bpsBottom.color) && bpsBottom.color.equals(bpsLeft.color) && bpsLeft.color.equals(bpsRight.color) && bpsRight.color.equals(bpsTop.color)) {
-      drawRectangle(middle.x,middle.y,middle.w,middle.h,bpsTop);
+      drawRectangle(middle.x,middle.y,middle.w,middle.h,bpsTop,false);
     } else {
       Rect outer=new Rect(middle.x-widthLeft/2,middle.y-widthTop/2,middle.w+widthLeft/2+widthRight/2,middle.h+widthTop/2+widthBottom/2);
       
@@ -752,9 +758,8 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
 		switch(area.getRuleStyle()) {
 		  case EN_RIDGE:
 		  case EN_GROOVE:
-		    props=new BorderProps(area.getRuleStyle(),area.getRuleThickness()/2,0,0,col,Mode.SEPARATE);
-        drawRectangle(startx+ruleThickness/2,starty+3*ruleThickness/4,endx-startx-ruleThickness,ruleThickness/4,props);
-        fillRect(startx+ruleThickness/2,starty+3*ruleThickness/4,endx-startx-ruleThickness,ruleThickness/4);
+		    props=new BorderProps(area.getRuleStyle()==EN_GROOVE?Constants.EN_INSET:Constants.EN_OUTSET,area.getRuleThickness()/4,0,0,col,Mode.SEPARATE);
+		    drawRectangle(startx+ruleThickness/2,starty+3*ruleThickness/4,endx-startx-ruleThickness,ruleThickness/2,props,true);
 		    break;
 		  default:
 		    props=new BorderProps(area.getRuleStyle(),area.getRuleThickness(),0,0,col,Mode.SEPARATE);
