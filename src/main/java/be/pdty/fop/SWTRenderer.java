@@ -295,11 +295,11 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
 	  if(horz) {
 	    float width=y2-y1;
 	    BorderProps props=new BorderProps(style,(int)(width*1000f),0,0,col,Mode.SEPARATE);
-	    drawHLine(x1,x2,y1+width/2,startOrBefore,props);
+	    drawHTrapeze(x1,y1,x2,x2,y2,x1,startOrBefore,props);
 	  } else {
       float width=x2-x1;
       BorderProps props=new BorderProps(style,(int)(width*1000f),0,0,col,Mode.SEPARATE);
-      drawVLine(x1+width/2,y1,y2,startOrBefore,props);
+      drawVTrapeze(x1,y1,x2,y1,y2,y2,startOrBefore,props);
 	  }
 	}
 	
@@ -343,6 +343,35 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
 	  }
 	}
 	
+	private void drawRectangle(float x,float y,float w,float h,float weight) {
+    PathData path=new PathData();
+    path.types=new byte[] {
+        SWT.PATH_MOVE_TO,
+        SWT.PATH_LINE_TO,
+        SWT.PATH_LINE_TO,
+        SWT.PATH_LINE_TO,
+        SWT.PATH_CLOSE,
+        SWT.PATH_MOVE_TO,
+        SWT.PATH_LINE_TO,
+        SWT.PATH_LINE_TO,
+        SWT.PATH_LINE_TO,
+        SWT.PATH_CLOSE,
+        };
+
+    path.points=new float[] {
+        x-weight/2,y-weight/2,
+        x+w+weight/2,y-weight/2,
+        x+w+weight/2,y+h+weight/2,
+        x-weight/2,y+h+weight/2,
+        x+weight/2,y+weight/2,
+        x+w-weight/2,y+weight/2,
+        x+w-weight/2,y+h-weight/2,
+        x+weight/2,y+h-weight/2,
+    };
+    wrapper.fillPath(path);
+	  
+	}
+	
 	//Draw a rectangle from x,y and of size w,h as chord.
 	private void drawRectangle(float x,float y,float w,float h,BorderProps props,boolean fill) {
     switch(props.style) {
@@ -351,17 +380,15 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
         break;
       case Constants.EN_DOUBLE: {
         wrapper.setColor(Convert.toRGBA(props.color));
-        wrapper.setLineAttributes(Convert.toLineAttributes(getStroke(props,1f/3f)));
         float weight=props.width/1000f;
         float leftMost=x-weight/2;
         float topMost=y-weight/2;
-        wrapper.drawRectangle(leftMost+weight/6,topMost+weight/6,w+weight*2/3,h+weight*2/3);
-        wrapper.drawRectangle(leftMost+5*weight/6,topMost+5*weight/6,w-weight*2/3,h-weight*2/3);
+        drawRectangle(leftMost+weight/6,topMost+weight/6,w+weight*2/3,h+weight*2/3,weight/3);
+        drawRectangle(leftMost+5*weight/6,topMost+5*weight/6,w-weight*2/3,h-weight*2/3,weight/3);
         break;
       }
       case Constants.EN_GROOVE:
       case Constants.EN_RIDGE: {
-        wrapper.setLineAttributes(Convert.toLineAttributes(getStroke(props,1f/3f)));
         float weight=props.width/1000f;
         float leftMost=x-weight/2;
         float topMost=y-weight/2;
@@ -419,14 +446,12 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
         };
         wrapper.fillPath(path);
         
-        wrapper.setLineAttributes(Convert.toLineAttributes(getStroke(props,1.5f/3f)));
         wrapper.setColor(Convert.toRGBA(props.color));
-        wrapper.drawRectangle(x,y,w,h);
+        drawRectangle(x,y,w,h,weight*2.0f/3f);
         break;
       }
       case Constants.EN_INSET:
       case Constants.EN_OUTSET: {
-        wrapper.setLineAttributes(Convert.toLineAttributes(getStroke(props)));
         float weight=props.width/1000f;
         float colFactor = (props.style == EN_OUTSET ? 0.4f : -0.4f);
         Color uppercol = ColorUtil.lightenColor(props.color, -colFactor);
@@ -467,11 +492,14 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
       }
       case Constants.EN_DOTTED:
       case Constants.EN_DASHED:
-      case Constants.EN_SOLID:
-      default:
         wrapper.setColor(Convert.toRGBA(props.color));
         wrapper.setLineAttributes(Convert.toLineAttributes(getStroke(props)));
         wrapper.drawRectangle(x,y,w,h);
+        break;
+      case Constants.EN_SOLID:
+      default:
+        wrapper.setColor(Convert.toRGBA(props.color));
+        drawRectangle(x,y,w,h,props.width/1000f);
         break;
     }
     
@@ -481,115 +509,120 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
       wrapper.fillRectangle(x+weight/2,y+weight/2,w-weight,h-weight);
     }
 	}
-	
-	//Draw a line from x1 to x2 (inclusive), with the middle-line as y.
-	//This means the outer box of the line is (x1,y-w/2)-(x2,y+w/2)
-	private void drawHLine(float x1,float x2,float y,boolean top,BorderProps props) {
-	  switch(props.style) {
-	    case Constants.EN_HIDDEN:
-      case Constants.EN_NONE:
-	      break;
-	    case Constants.EN_DOUBLE: {
-        wrapper.setColor(Convert.toRGBA(props.color));
-        wrapper.setLineAttributes(Convert.toLineAttributes(getStroke(props,1f/3f)));
-        float h=props.width/1000f;
-        float ytop=y-h/2;
-        float y1=ytop+h/6;
-        float y2=ytop+5*h/6;
-        wrapper.drawLine(x1,y1,x2,y1);
-        wrapper.drawLine(x1,y2,x2,y2);
-	      break;
-	    }
-	    case Constants.EN_GROOVE:
-	    case Constants.EN_RIDGE: {
-	      float colFactor = (props.style == EN_GROOVE ? 0.4f : -0.4f);
-        Color uppercol = ColorUtil.lightenColor(props.color, -colFactor);
-        Color lowercol = ColorUtil.lightenColor(props.color, colFactor);
-        wrapper.setLineAttributes(Convert.toLineAttributes(getStroke(props,1f/3f)));
-        float h=props.width/1000f;
-        float ytop=y-h/2;
-        float y1=ytop+h/6;
-        float y2=ytop+5*h/6;
-        wrapper.setColor(Convert.toRGBA(uppercol));
-        wrapper.drawLine(x1,y1,x2,y1);
-        wrapper.setColor(Convert.toRGBA(props.color));
-        wrapper.drawLine(x1,y,x2,y);
-        wrapper.setColor(Convert.toRGBA(lowercol));
-        wrapper.drawLine(x1,y2,x2,y2);
-	      break;
-	    }
-      case Constants.EN_INSET:
-      case Constants.EN_OUTSET: {
-        float colFactor = (props.style == EN_OUTSET ? 0.4f : -0.4f);
-        Color col = ColorUtil.lightenColor(props.color, (top ? 1 : -1) * colFactor);
-        wrapper.setColor(Convert.toRGBA(col));
-        wrapper.setLineAttributes(Convert.toLineAttributes(getStroke(props)));
-        wrapper.drawLine(x1,y,x2,y);
-	      break;
-      }
-	    case Constants.EN_DOTTED:
-	    case Constants.EN_DASHED:
-	    case Constants.EN_SOLID:
-	    default:
-	      wrapper.setColor(Convert.toRGBA(props.color));
-	      wrapper.setLineAttributes(Convert.toLineAttributes(getStroke(props)));
-	      wrapper.drawLine(x1,y,x2,y);
-	      break;
-	  }
-	}
-	
-	//Draw a line from y1 to y2 (inclusive), with the middle-line as x.
-	//This means the outer box of the line is (x-w/2,y1)-(x+w/2,y2)
-	private void drawVLine(float x,float y1,float y2,boolean left,BorderProps props) {
+
+	private void drawHTrapeze(float x1,float y1,float x2,float x3,float y3,float x4,boolean top,BorderProps props) {
     switch(props.style) {
       case Constants.EN_HIDDEN:
       case Constants.EN_NONE:
         break;
       case Constants.EN_DOUBLE: {
-        wrapper.setColor(Convert.toRGBA(props.color));
-        wrapper.setLineAttributes(Convert.toLineAttributes(getStroke(props,1f/3f)));
-        float h=props.width/1000f;
-        float xleft=x-h/2;
-        float x1=xleft+h/6;
-        float x2=xleft+5*h/6;
-        wrapper.drawLine(x1,y1,x1,y2);
-        wrapper.drawLine(x2,y1,x2,y2);
+        BorderProps p2=new BorderProps(Constants.EN_SOLID,props.width/3,props.getRadiusStart(),props.getRadiusEnd(),props.color,Mode.SEPARATE);
+        drawHTrapeze(x1,y1,x2,(x2*2+x3)/3,(y1*2+y3)/3,(x1*2+x4)/3,top,p2);
+        drawHTrapeze((x1+x4*2)/3,(y1+y3*2)/3,(x2+x3*2)/3,x3,y3,x4,top,p2);
         break;
       }
       case Constants.EN_GROOVE:
       case Constants.EN_RIDGE: {
         float colFactor = (props.style == EN_GROOVE ? 0.4f : -0.4f);
         Color uppercol = ColorUtil.lightenColor(props.color, -colFactor);
+        BorderProps upperp=new BorderProps(Constants.EN_SOLID,props.width/3,props.getRadiusStart(),props.getRadiusEnd(),uppercol,Mode.SEPARATE);
         Color lowercol = ColorUtil.lightenColor(props.color, colFactor);
-        wrapper.setLineAttributes(Convert.toLineAttributes(getStroke(props,1f/3f)));
-        float h=props.width/1000f;
-        float xleft=x-h/2;
-        float x1=xleft+h/6;
-        float x2=xleft+5*h/6;
-        wrapper.setColor(Convert.toRGBA(uppercol));
-        wrapper.drawLine(x1,y1,x1,y2);
+        BorderProps lowerp=new BorderProps(Constants.EN_SOLID,props.width/3,props.getRadiusStart(),props.getRadiusEnd(),lowercol,Mode.SEPARATE);
+        BorderProps p2=new BorderProps(Constants.EN_SOLID,props.width/3,props.getRadiusStart(),props.getRadiusEnd(),props.color,Mode.SEPARATE);
+        
+        drawHTrapeze(x1,y1,x2,(x2*5+x3)/6,(y1*5+y3)/6,(x1*5+x4)/6,top,upperp);
+        drawHTrapeze((x1+x4*5)/6,(y1+y3*5)/6,(x2+x3*5)/6,(x2*5+x3)/6,(y1*5+y3)/6,(x1*5+x4)/6,top,p2);
+        drawHTrapeze((x1+x4*5)/6,(y1+y3*5)/6,(x2+x3*5)/6,x3,y3,x4,top,lowerp);
+        break;
+      }
+      case Constants.EN_INSET:
+      case Constants.EN_OUTSET: {
+        float colFactor = (props.style == EN_OUTSET ? 0.4f : -0.4f);
+        Color col = ColorUtil.lightenColor(props.color, (top ? 1 : -1) * colFactor);
+        BorderProps p2=new BorderProps(Constants.EN_SOLID,props.width,props.getRadiusStart(),props.getRadiusEnd(),col,Mode.SEPARATE);
+        drawHTrapeze(x1,y1,x2,x3,y3,x4,top,p2);
+        break;
+      }
+      case Constants.EN_DOTTED:
+      case Constants.EN_DASHED:
         wrapper.setColor(Convert.toRGBA(props.color));
-        wrapper.drawLine(x,y1,x,y2);
-        wrapper.setColor(Convert.toRGBA(lowercol));
-        wrapper.drawLine(x2,y1,x2,y2);
+        wrapper.setLineAttributes(Convert.toLineAttributes(getStroke(props)));
+        wrapper.drawLine((x1+x4)/2f,(y1+y3)/2f,(x2+x3)/2f,(y1+y3)/2f);
+        break;
+      case Constants.EN_SOLID:
+      default:
+        PathData path=new PathData();
+        path.types=new byte[] {
+            SWT.PATH_MOVE_TO,
+            SWT.PATH_LINE_TO,
+            SWT.PATH_LINE_TO,
+            SWT.PATH_LINE_TO,
+            SWT.PATH_CLOSE};
+        path.points=new float[] {
+            x1,y1,
+            x2,y1,
+            x3,y3,
+            x4,y3};
+        wrapper.setColor(Convert.toRGBA(props.color));
+        wrapper.fillPath(path);
+        break;
+    }
+	}
+	
+	private void drawVTrapeze(float x1,float y1,float x2,float y2,float y3,float y4,boolean left,BorderProps props) {
+    switch(props.style) {
+      case Constants.EN_HIDDEN:
+      case Constants.EN_NONE:
+        break;
+      case Constants.EN_DOUBLE: {
+        BorderProps p2=new BorderProps(Constants.EN_SOLID,props.width/3,props.getRadiusStart(),props.getRadiusEnd(),props.color,Mode.SEPARATE);
+        drawVTrapeze(x1,y1,(x1*2+x2)/3,(y1*2+y2)/3,(y3+y4*2)/3,y4,left,p2);
+        drawVTrapeze((x1+x2*2)/3,(y1+y2*2)/3,x2,y2,y3,(y3*2+y4)/3,left,p2);
+        break;
+      }
+      case Constants.EN_GROOVE:
+      case Constants.EN_RIDGE: {
+        float colFactor = (props.style == EN_GROOVE ? 0.4f : -0.4f);
+        Color uppercol = ColorUtil.lightenColor(props.color, -colFactor);
+        BorderProps upperp=new BorderProps(Constants.EN_SOLID,props.width/3,props.getRadiusStart(),props.getRadiusEnd(),uppercol,Mode.SEPARATE);
+        Color lowercol = ColorUtil.lightenColor(props.color, colFactor);
+        BorderProps lowerp=new BorderProps(Constants.EN_SOLID,props.width/3,props.getRadiusStart(),props.getRadiusEnd(),lowercol,Mode.SEPARATE);
+        BorderProps p2=new BorderProps(Constants.EN_SOLID,props.width/3,props.getRadiusStart(),props.getRadiusEnd(),props.color,Mode.SEPARATE);
+        drawVTrapeze(x1,y1,(x1*5+x2)/6,(y1*5+y2)/6,(y3+y4*5)/6,y4,left,upperp);
+        drawVTrapeze((x1+x2*5)/6,(y1+y2*5)/6,(x1*5+x2)/6,(y1*5+y2)/6,(y3+y4*5)/6,(y3*5+y4)/6,left,p2);
+        drawVTrapeze((x1+x2*5)/6,(y1+y2*5)/6,x2,y2,y3,(y3*5+y4)/6,left,lowerp);
         break;
       }
       case Constants.EN_INSET:
       case Constants.EN_OUTSET: {
         float colFactor = (props.style == EN_OUTSET ? 0.4f : -0.4f);
         Color col = ColorUtil.lightenColor(props.color, (left ? 1 : -1) * colFactor);
-        wrapper.setColor(Convert.toRGBA(col));
-        wrapper.setLineAttributes(Convert.toLineAttributes(getStroke(props)));
-        wrapper.drawLine(x,y1,x,y2);
+        BorderProps p2=new BorderProps(Constants.EN_SOLID,props.width,props.getRadiusStart(),props.getRadiusEnd(),col,Mode.SEPARATE);
+        drawVTrapeze(x1,y1,x2,y2,y3,y4,left,p2);
         break;
       }
       case Constants.EN_DOTTED:
       case Constants.EN_DASHED:
-      case Constants.EN_SOLID:
-      default:
         wrapper.setColor(Convert.toRGBA(props.color));
         wrapper.setLineAttributes(Convert.toLineAttributes(getStroke(props)));
-        wrapper.drawLine(x,y1,x,y2);
+        wrapper.drawLine((x1+x2)/2f,(y1+y2)/2f,(x1+x2)/2f,(y3+y4)/2f);
+        break;
+      case Constants.EN_SOLID:
+      default:
+        PathData path=new PathData();
+        path.types=new byte[] {
+            SWT.PATH_MOVE_TO,
+            SWT.PATH_LINE_TO,
+            SWT.PATH_LINE_TO,
+            SWT.PATH_LINE_TO,
+            SWT.PATH_CLOSE};
+        path.points=new float[] {
+            x1,y1,
+            x2,y2,
+            x2,y3,
+            x1,y4};
+        wrapper.setColor(Convert.toRGBA(props.color));
+        wrapper.fillPath(path);
         break;
     }
 	}
@@ -652,71 +685,118 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
 
     if(widthTop==widthBottom && widthBottom==widthLeft && widthLeft==widthRight && widthRight==widthTop &&
         bpsTop.style==bpsBottom.style && bpsBottom.style==bpsLeft.style && bpsLeft.style==bpsRight.style && bpsRight.style==bpsTop.style &&
+        //Dashes and dots don't nicely "blend" with their neighbors if we mix rectangles and lines, so if we need those and we're not outer,
+        //we'll still go for 4xlines instead of drawing the rectangle.
+        ((bpsTop.style!=Constants.EN_DASHED && bpsTop.style!=Constants.EN_DOTTED) || (outer(bpsTop) && outer(bpsBottom) && outer(bpsLeft) && outer(bpsRight))) && 
         bpsTop.color.equals(bpsBottom.color) && bpsBottom.color.equals(bpsLeft.color) && bpsLeft.color.equals(bpsRight.color) && bpsRight.color.equals(bpsTop.color)) {
       drawRectangle(middle.x,middle.y,middle.w,middle.h,bpsTop,false);
     } else {
       Rect outer=new Rect(middle.x-widthLeft/2,middle.y-widthTop/2,middle.w+widthLeft/2+widthRight/2,middle.h+widthTop/2+widthBottom/2);
+      Rect inner=new Rect(middle.x+widthLeft/2,middle.y+widthTop/2,middle.w-widthLeft/2-widthRight/2,middle.h-widthTop/2-widthBottom/2);
       
       //Top
       if(bpsTop.style!=Constants.EN_NONE) {
-        float left=outer.x;
-        float right=outer.x+outer.w;
+        float left1=outer.x;
+        float left2=outer.x;
+        float right1=outer.x+outer.w;
+        float right2=outer.x+outer.w;
         
         if(outer(bpsTop)) {
-          //For corners, we don't support the diagonal cut, we let horizontal lines "win" over vertical.
-          //So we keep top and bottom at full length, and we reduce left and right.
+          if(outer(bpsLeft)) {
+            left2=inner.x;
+          }
+          if(outer(bpsRight)) {
+            right2=inner.x+inner.w;
+          }
         } else {
-          if(outer(bpsLeft)) left+=widthLeft;
-          if(outer(bpsRight)) right-=widthRight;
+          if(outer(bpsLeft)) {
+            left1=inner.x;
+            left2=inner.x;
+          }
+          if(outer(bpsRight)) {
+            right1=inner.x+inner.w;
+            right2=inner.x+inner.w;
+          }
         }
-        drawHLine(left,right,middle.y,true,bpsTop);
+        drawHTrapeze(left1,outer.y,right1,right2,inner.y,left2,true,bpsTop);
       }
 
       //Bottom
       if(bpsBottom.style!=Constants.EN_NONE) {
-        float left=outer.x;
-        float right=outer.x+outer.w;
+        float left1=outer.x;
+        float left2=outer.x;
+        float right1=outer.x+outer.w;
+        float right2=outer.x+outer.w;
         if(outer(bpsBottom)) {
-          //For corners, we don't support the diagonal cut, we let horizontal lines "win" over vertical.
-          //So we keep top and bottom at full length, and we reduce left and right.
+          if(outer(bpsLeft)) {
+            left1=inner.x;
+          }
+          if(outer(bpsRight)) {
+            right1=inner.x+inner.w;
+          }
         } else {
-          if(outer(bpsLeft)) left+=widthLeft;
-          if(outer(bpsRight)) right-=widthRight;
+          if(outer(bpsLeft)) {
+            left1=inner.x;
+            left2=inner.x;
+          }
+          if(outer(bpsRight)) {
+            right1=inner.x+inner.w;
+            right2=inner.x+inner.w;
+          }
         }
-        drawHLine(left,right,middle.y+middle.h,false,bpsBottom);
+        drawHTrapeze(left1,inner.y+inner.h,right1,right2,outer.y+outer.h,left2,false,bpsBottom);
       }
 
       //Left
       if(bpsLeft.style!=Constants.EN_NONE) {
-        float top=outer.y;
-        float bottom=outer.y+outer.h;
+        float top1=outer.y;
+        float top2=outer.y;
+        float bottom1=outer.y+outer.h;
+        float bottom2=outer.y+outer.h;
         if(outer(bpsLeft)) {
-          //For corners, we don't support the diagonal cut, we let horizontal lines "win" over vertical.
-          //So we keep top and bottom at full length, and we reduce left and right.
-          if(outer(bpsTop)) top+=widthTop;
-          if(outer(bpsBottom)) bottom-=widthBottom;
+          if(outer(bpsTop)) {
+            top2=inner.y;
+          }
+          if(outer(bpsBottom)) {
+            bottom1=inner.y+inner.h;
+          }
         } else {
-          if(outer(bpsTop)) top+=widthTop;
-          if(outer(bpsBottom)) bottom-=widthBottom;
+          if(outer(bpsTop)) {
+            top1=inner.y;
+            top2=inner.y;
+          }
+          if(outer(bpsBottom)) {
+            bottom1=inner.y+inner.h;
+            bottom2=inner.y+inner.h;
+          }
         }
-        drawVLine(middle.x,top,bottom,true,bpsLeft);
+        drawVTrapeze(outer.x,top1,inner.x,top2,bottom1,bottom2,true,bpsLeft);
       }
 
       //Right
       if(bpsRight.style!=Constants.EN_NONE) {
-        float top=outer.y;
-        float bottom=outer.y+outer.h;
+        float top1=outer.y;
+        float top2=outer.y;
+        float bottom1=outer.y+outer.h;
+        float bottom2=outer.y+outer.h;
         if(outer(bpsRight)) {
-          //For corners, we don't support the diagonal cut, we let horizontal lines "win" over vertical.
-          //So we keep top and bottom at full length, and we reduce left and right.
-          if(outer(bpsTop)) top+=widthTop;
-          if(outer(bpsBottom)) bottom-=widthBottom;
-        } else
-        {
-          if(outer(bpsTop)) top+=widthTop;
-          if(outer(bpsBottom)) bottom-=widthBottom;
+          if(outer(bpsTop)) {
+            top1=inner.y;
+          }
+          if(outer(bpsBottom)) {
+            bottom2=inner.y+inner.h;
+          }
+        } else {
+          if(outer(bpsTop)) {
+            top1=inner.y;
+            top2=inner.y;
+          }
+          if(outer(bpsBottom)) {
+            bottom1=inner.y+inner.h;
+            bottom2=inner.y+inner.h;
+          }
         }
-        drawVLine(middle.x+middle.w,top,bottom,false,bpsRight);
+        drawVTrapeze(inner.x+inner.w,top1,outer.x+outer.w,top2,bottom1,bottom2,false,bpsRight);
       }
     }
     restoreGraphicsState();
@@ -732,26 +812,27 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
       float descender=fm.getDescender(fontsize)/1000f;
       float capHeight=fm.getCapHeight(fontsize)/1000f;
       float endx=startx+inline.getIPD();
+      float weight=fm.getDescender(fontsize)/-4000f;
       if(inline.hasUnderline())
       {
         Color ct=(Color)inline.getTrait(Trait.UNDERLINE_COLOR);
         BorderProps props=new BorderProps(Constants.EN_SOLID,(int)(fm.getDescender(fontsize)/-8000f),0,0,ct,Mode.SEPARATE);
         float y=baseline-descender;
-        drawHLine(startx/1000f,endx/1000f,y/1000f,true,props);
+        drawHTrapeze(startx/1000f,(y-weight/2)/1000f,endx/1000f,endx/1000f,(y+weight/2)/1000f,startx/1000f,true,props);
       }
       if(inline.hasOverline())
       {
         Color ct=(Color)inline.getTrait(Trait.OVERLINE_COLOR);
         BorderProps props=new BorderProps(Constants.EN_SOLID,(int)(fm.getDescender(fontsize)/-8000f),0,0,ct,Mode.SEPARATE);
         float y=(float)(baseline-(1.2*capHeight));
-        drawHLine(startx/1000f,endx/1000f,y/1000f,true,props);
+        drawHTrapeze(startx/1000f,(y-weight/2)/1000f,endx/1000f,endx/1000f,(y+weight/2)/1000f,startx/1000f,true,props);
       }
       if(inline.hasLineThrough())
       {
         Color ct=(Color)inline.getTrait(Trait.LINETHROUGH_COLOR);
         BorderProps props=new BorderProps(Constants.EN_SOLID,(int)(fm.getDescender(fontsize)/-8000f),0,0,ct,Mode.SEPARATE);
         float y=(float)(baseline-(0.45*capHeight));
-        drawHLine(startx/1000f,endx/1000f,y/1000f,true,props);
+        drawHTrapeze(startx/1000f,(y-weight/2)/1000f,endx/1000f,endx/1000f,(y+weight/2)/1000f,startx/1000f,true,props);
       }
     }
   }
@@ -830,7 +911,7 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
 		    break;
 		  default:
 		    props=new BorderProps(area.getRuleStyle(),area.getRuleThickness(),0,0,col,Mode.SEPARATE);
-		    drawHLine(startx,endx,starty+ruleThickness,true,props);
+		    drawHTrapeze(startx,starty+ruleThickness/2,endx,endx,starty+ruleThickness*1.5f,startx,true,props);
 		    break;
 		}
     super.renderLeader(area);
