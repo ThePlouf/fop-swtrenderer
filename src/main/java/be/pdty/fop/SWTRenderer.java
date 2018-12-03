@@ -627,7 +627,7 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
     }
 	}
 	
-	private static Color BLACK=new Color(0,0,0);
+	private final static Color BLACK=new Color(0,0,0);
 	
   @Override
   protected void drawBorders(Rectangle2D.Float borderRect,BorderProps bpsTop,BorderProps bpsBottom,BorderProps bpsLeft,BorderProps bpsRight,Color innerBackgroundColor)
