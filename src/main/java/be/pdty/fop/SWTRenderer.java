@@ -210,6 +210,7 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
 
 	@Override
 	protected void endVParea() {
+	  wrapper.commitDeferred();
 		restoreGraphicsState();
 	}
 
@@ -295,11 +296,11 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
 	  if(horz) {
 	    float width=y2-y1;
 	    BorderProps props=new BorderProps(style,(int)(width*1000f),0,0,col,Mode.SEPARATE);
-	    drawHTrapeze(x1,y1,x2,x2,y2,x1,startOrBefore,props);
+	    drawHTrapeze(x1,y1,x2,x2,y2,x1,startOrBefore,true,props);
 	  } else {
       float width=x2-x1;
       BorderProps props=new BorderProps(style,(int)(width*1000f),0,0,col,Mode.SEPARATE);
-      drawVTrapeze(x1,y1,x2,y1,y2,y2,startOrBefore,props);
+      drawVTrapeze(x1,y1,x2,y1,y2,y2,startOrBefore,true,props);
 	  }
 	}
 	
@@ -343,15 +344,16 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
 	  }
 	}
 	
-	private void drawRectangle(float x,float y,float w,float h,float weight) {
+	private void drawRectangle(float x,float y,float w,float h,float weight,boolean allowDeferred) {
     PathData path=new PathData();
     path.types=new byte[] {
         SWT.PATH_MOVE_TO,
         SWT.PATH_LINE_TO,
         SWT.PATH_LINE_TO,
         SWT.PATH_LINE_TO,
-        SWT.PATH_CLOSE,
-        SWT.PATH_MOVE_TO,
+        SWT.PATH_LINE_TO,
+        SWT.PATH_LINE_TO,
+        SWT.PATH_LINE_TO,
         SWT.PATH_LINE_TO,
         SWT.PATH_LINE_TO,
         SWT.PATH_LINE_TO,
@@ -363,17 +365,25 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
         x+w+weight/2,y-weight/2,
         x+w+weight/2,y+h+weight/2,
         x-weight/2,y+h+weight/2,
+        x-weight/2,y+weight/2,
+        
         x+weight/2,y+weight/2,
-        x+w-weight/2,y+weight/2,
-        x+w-weight/2,y+h-weight/2,
         x+weight/2,y+h-weight/2,
+        x+w-weight/2,y+h-weight/2,
+        x+w-weight/2,y+weight/2,
+        x-weight/2,y+weight/2
+        
     };
-    wrapper.fillPath(path);
+    if(allowDeferred) {
+      wrapper.fillPathDeferred(path);
+    } else {
+      wrapper.fillPath(path);
+    }
 	  
 	}
 	
 	//Draw a rectangle from x,y and of size w,h as chord.
-	private void drawRectangle(float x,float y,float w,float h,BorderProps props,boolean fill) {
+	private void drawRectangle(float x,float y,float w,float h,BorderProps props,boolean fill,boolean allowDeferred) {
     switch(props.style) {
       case Constants.EN_HIDDEN:
       case Constants.EN_NONE:
@@ -383,8 +393,8 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
         float weight=props.width/1000f;
         float leftMost=x-weight/2;
         float topMost=y-weight/2;
-        drawRectangle(leftMost+weight/6,topMost+weight/6,w+weight*2/3,h+weight*2/3,weight/3);
-        drawRectangle(leftMost+5*weight/6,topMost+5*weight/6,w-weight*2/3,h-weight*2/3,weight/3);
+        drawRectangle(leftMost+weight/6,topMost+weight/6,w+weight*2/3,h+weight*2/3,weight/3,allowDeferred);
+        drawRectangle(leftMost+5*weight/6,topMost+5*weight/6,w-weight*2/3,h-weight*2/3,weight/3,allowDeferred);
         break;
       }
       case Constants.EN_GROOVE:
@@ -447,7 +457,7 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
         wrapper.fillPath(path);
         
         wrapper.setColor(Convert.toRGBA(props.color));
-        drawRectangle(x,y,w,h,weight*2.0f/3f);
+        drawRectangle(x,y,w,h,weight*2.0f/3f,false);
         break;
       }
       case Constants.EN_INSET:
@@ -473,7 +483,11 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
             x+weight/2,y+weight/2,
             x+weight/2,y+h-weight/2,
             x-weight/2,y+h+weight/2};
-        wrapper.fillPath(path);
+        if(allowDeferred) {
+          wrapper.fillPathDeferred(path);
+        } else {
+          wrapper.fillPath(path);
+        }
         
         wrapper.setColor(Convert.toRGBA(uppercol));
         path.points=new float[] {
@@ -486,7 +500,11 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
             
         };
         
-        wrapper.fillPath(path);
+        if(allowDeferred) {
+          wrapper.fillPathDeferred(path);
+        } else {
+          wrapper.fillPath(path);
+        }
         
         break;
       }
@@ -499,7 +517,7 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
       case Constants.EN_SOLID:
       default:
         wrapper.setColor(Convert.toRGBA(props.color));
-        drawRectangle(x,y,w,h,props.width/1000f);
+        drawRectangle(x,y,w,h,props.width/1000f,allowDeferred);
         break;
     }
     
@@ -510,15 +528,15 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
     }
 	}
 
-	private void drawHTrapeze(float x1,float y1,float x2,float x3,float y3,float x4,boolean top,BorderProps props) {
+	private void drawHTrapeze(float x1,float y1,float x2,float x3,float y3,float x4,boolean top,boolean allowDeferred,BorderProps props) {
     switch(props.style) {
       case Constants.EN_HIDDEN:
       case Constants.EN_NONE:
         break;
       case Constants.EN_DOUBLE: {
         BorderProps p2=new BorderProps(Constants.EN_SOLID,props.width/3,props.getRadiusStart(),props.getRadiusEnd(),props.color,Mode.SEPARATE);
-        drawHTrapeze(x1,y1,x2,(x2*2+x3)/3,(y1*2+y3)/3,(x1*2+x4)/3,top,p2);
-        drawHTrapeze((x1+x4*2)/3,(y1+y3*2)/3,(x2+x3*2)/3,x3,y3,x4,top,p2);
+        drawHTrapeze(x1,y1,x2,(x2*2+x3)/3,(y1*2+y3)/3,(x1*2+x4)/3,top,allowDeferred,p2);
+        drawHTrapeze((x1+x4*2)/3,(y1+y3*2)/3,(x2+x3*2)/3,x3,y3,x4,top,allowDeferred,p2);
         break;
       }
       case Constants.EN_GROOVE:
@@ -530,9 +548,9 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
         BorderProps lowerp=new BorderProps(Constants.EN_SOLID,props.width/3,props.getRadiusStart(),props.getRadiusEnd(),lowercol,Mode.SEPARATE);
         BorderProps p2=new BorderProps(Constants.EN_SOLID,props.width/3,props.getRadiusStart(),props.getRadiusEnd(),props.color,Mode.SEPARATE);
         
-        drawHTrapeze(x1,y1,x2,(x2*5+x3)/6,(y1*5+y3)/6,(x1*5+x4)/6,top,upperp);
-        drawHTrapeze((x1+x4*5)/6,(y1+y3*5)/6,(x2+x3*5)/6,(x2*5+x3)/6,(y1*5+y3)/6,(x1*5+x4)/6,top,p2);
-        drawHTrapeze((x1+x4*5)/6,(y1+y3*5)/6,(x2+x3*5)/6,x3,y3,x4,top,lowerp);
+        drawHTrapeze(x1,y1,x2,(x2*5+x3)/6,(y1*5+y3)/6,(x1*5+x4)/6,top,false,upperp);
+        drawHTrapeze((x1+x4*5)/6,(y1+y3*5)/6,(x2+x3*5)/6,(x2*5+x3)/6,(y1*5+y3)/6,(x1*5+x4)/6,top,false,p2);
+        drawHTrapeze((x1+x4*5)/6,(y1+y3*5)/6,(x2+x3*5)/6,x3,y3,x4,top,false,lowerp);
         break;
       }
       case Constants.EN_INSET:
@@ -540,7 +558,7 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
         float colFactor = (props.style == EN_OUTSET ? 0.4f : -0.4f);
         Color col = ColorUtil.lightenColor(props.color, (top ? 1 : -1) * colFactor);
         BorderProps p2=new BorderProps(Constants.EN_SOLID,props.width,props.getRadiusStart(),props.getRadiusEnd(),col,Mode.SEPARATE);
-        drawHTrapeze(x1,y1,x2,x3,y3,x4,top,p2);
+        drawHTrapeze(x1,y1,x2,x3,y3,x4,top,allowDeferred,p2);
         break;
       }
       case Constants.EN_DOTTED:
@@ -564,20 +582,24 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
             x3,y3,
             x4,y3};
         wrapper.setColor(Convert.toRGBA(props.color));
-        wrapper.fillPath(path);
+        if(allowDeferred) {
+          wrapper.fillPathDeferred(path);
+        } else {
+          wrapper.fillPath(path);
+        }
         break;
     }
 	}
 	
-	private void drawVTrapeze(float x1,float y1,float x2,float y2,float y3,float y4,boolean left,BorderProps props) {
+	private void drawVTrapeze(float x1,float y1,float x2,float y2,float y3,float y4,boolean left,boolean allowDeferred,BorderProps props) {
     switch(props.style) {
       case Constants.EN_HIDDEN:
       case Constants.EN_NONE:
         break;
       case Constants.EN_DOUBLE: {
         BorderProps p2=new BorderProps(Constants.EN_SOLID,props.width/3,props.getRadiusStart(),props.getRadiusEnd(),props.color,Mode.SEPARATE);
-        drawVTrapeze(x1,y1,(x1*2+x2)/3,(y1*2+y2)/3,(y3+y4*2)/3,y4,left,p2);
-        drawVTrapeze((x1+x2*2)/3,(y1+y2*2)/3,x2,y2,y3,(y3*2+y4)/3,left,p2);
+        drawVTrapeze(x1,y1,(x1*2+x2)/3,(y1*2+y2)/3,(y3+y4*2)/3,y4,left,allowDeferred,p2);
+        drawVTrapeze((x1+x2*2)/3,(y1+y2*2)/3,x2,y2,y3,(y3*2+y4)/3,left,allowDeferred,p2);
         break;
       }
       case Constants.EN_GROOVE:
@@ -588,9 +610,9 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
         Color lowercol = ColorUtil.lightenColor(props.color, colFactor);
         BorderProps lowerp=new BorderProps(Constants.EN_SOLID,props.width/3,props.getRadiusStart(),props.getRadiusEnd(),lowercol,Mode.SEPARATE);
         BorderProps p2=new BorderProps(Constants.EN_SOLID,props.width/3,props.getRadiusStart(),props.getRadiusEnd(),props.color,Mode.SEPARATE);
-        drawVTrapeze(x1,y1,(x1*5+x2)/6,(y1*5+y2)/6,(y3+y4*5)/6,y4,left,upperp);
-        drawVTrapeze((x1+x2*5)/6,(y1+y2*5)/6,(x1*5+x2)/6,(y1*5+y2)/6,(y3+y4*5)/6,(y3*5+y4)/6,left,p2);
-        drawVTrapeze((x1+x2*5)/6,(y1+y2*5)/6,x2,y2,y3,(y3*5+y4)/6,left,lowerp);
+        drawVTrapeze(x1,y1,(x1*5+x2)/6,(y1*5+y2)/6,(y3+y4*5)/6,y4,left,false,upperp);
+        drawVTrapeze((x1+x2*5)/6,(y1+y2*5)/6,(x1*5+x2)/6,(y1*5+y2)/6,(y3+y4*5)/6,(y3*5+y4)/6,left,false,p2);
+        drawVTrapeze((x1+x2*5)/6,(y1+y2*5)/6,x2,y2,y3,(y3*5+y4)/6,left,false,lowerp);
         break;
       }
       case Constants.EN_INSET:
@@ -598,7 +620,7 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
         float colFactor = (props.style == EN_OUTSET ? 0.4f : -0.4f);
         Color col = ColorUtil.lightenColor(props.color, (left ? 1 : -1) * colFactor);
         BorderProps p2=new BorderProps(Constants.EN_SOLID,props.width,props.getRadiusStart(),props.getRadiusEnd(),col,Mode.SEPARATE);
-        drawVTrapeze(x1,y1,x2,y2,y3,y4,left,p2);
+        drawVTrapeze(x1,y1,x2,y2,y3,y4,left,allowDeferred,p2);
         break;
       }
       case Constants.EN_DOTTED:
@@ -622,7 +644,11 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
             x2,y3,
             x1,y4};
         wrapper.setColor(Convert.toRGBA(props.color));
-        wrapper.fillPath(path);
+        if(allowDeferred) {
+          wrapper.fillPathDeferred(path);
+        } else {
+          wrapper.fillPath(path);
+        }
         break;
     }
 	}
@@ -689,7 +715,7 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
         //we'll still go for 4xlines instead of drawing the rectangle.
         ((bpsTop.style!=Constants.EN_DASHED && bpsTop.style!=Constants.EN_DOTTED) || (outer(bpsTop) && outer(bpsBottom) && outer(bpsLeft) && outer(bpsRight))) && 
         bpsTop.color.equals(bpsBottom.color) && bpsBottom.color.equals(bpsLeft.color) && bpsLeft.color.equals(bpsRight.color) && bpsRight.color.equals(bpsTop.color)) {
-      drawRectangle(middle.x,middle.y,middle.w,middle.h,bpsTop,false);
+      drawRectangle(middle.x,middle.y,middle.w,middle.h,bpsTop,false,true);
     } else {
       Rect outer=new Rect(middle.x-widthLeft/2,middle.y-widthTop/2,middle.w+widthLeft/2+widthRight/2,middle.h+widthTop/2+widthBottom/2);
       Rect inner=new Rect(middle.x+widthLeft/2,middle.y+widthTop/2,middle.w-widthLeft/2-widthRight/2,middle.h-widthTop/2-widthBottom/2);
@@ -718,7 +744,7 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
             right2=inner.x+inner.w;
           }
         }
-        drawHTrapeze(left1,outer.y,right1,right2,inner.y,left2,true,bpsTop);
+        drawHTrapeze(left1,outer.y,right1,right2,inner.y,left2,true,true,bpsTop);
       }
 
       //Bottom
@@ -744,7 +770,7 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
             right2=inner.x+inner.w;
           }
         }
-        drawHTrapeze(left1,inner.y+inner.h,right1,right2,outer.y+outer.h,left2,false,bpsBottom);
+        drawHTrapeze(left1,inner.y+inner.h,right1,right2,outer.y+outer.h,left2,false,true,bpsBottom);
       }
 
       //Left
@@ -770,7 +796,7 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
             bottom2=inner.y+inner.h;
           }
         }
-        drawVTrapeze(outer.x,top1,inner.x,top2,bottom1,bottom2,true,bpsLeft);
+        drawVTrapeze(outer.x,top1,inner.x,top2,bottom1,bottom2,true,true,bpsLeft);
       }
 
       //Right
@@ -796,7 +822,7 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
             bottom2=inner.y+inner.h;
           }
         }
-        drawVTrapeze(inner.x+inner.w,top1,outer.x+outer.w,top2,bottom1,bottom2,false,bpsRight);
+        drawVTrapeze(inner.x+inner.w,top1,outer.x+outer.w,top2,bottom1,bottom2,false,true,bpsRight);
       }
     }
     restoreGraphicsState();
@@ -818,21 +844,21 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
         Color ct=(Color)inline.getTrait(Trait.UNDERLINE_COLOR);
         BorderProps props=new BorderProps(Constants.EN_SOLID,(int)(fm.getDescender(fontsize)/-8000f),0,0,ct,Mode.SEPARATE);
         float y=baseline-descender;
-        drawHTrapeze(startx/1000f,(y-weight/2)/1000f,endx/1000f,endx/1000f,(y+weight/2)/1000f,startx/1000f,true,props);
+        drawHTrapeze(startx/1000f,(y-weight/2)/1000f,endx/1000f,endx/1000f,(y+weight/2)/1000f,startx/1000f,true,true,props);
       }
       if(inline.hasOverline())
       {
         Color ct=(Color)inline.getTrait(Trait.OVERLINE_COLOR);
         BorderProps props=new BorderProps(Constants.EN_SOLID,(int)(fm.getDescender(fontsize)/-8000f),0,0,ct,Mode.SEPARATE);
         float y=(float)(baseline-(1.2*capHeight));
-        drawHTrapeze(startx/1000f,(y-weight/2)/1000f,endx/1000f,endx/1000f,(y+weight/2)/1000f,startx/1000f,true,props);
+        drawHTrapeze(startx/1000f,(y-weight/2)/1000f,endx/1000f,endx/1000f,(y+weight/2)/1000f,startx/1000f,true,true,props);
       }
       if(inline.hasLineThrough())
       {
         Color ct=(Color)inline.getTrait(Trait.LINETHROUGH_COLOR);
         BorderProps props=new BorderProps(Constants.EN_SOLID,(int)(fm.getDescender(fontsize)/-8000f),0,0,ct,Mode.SEPARATE);
         float y=(float)(baseline-(0.45*capHeight));
-        drawHTrapeze(startx/1000f,(y-weight/2)/1000f,endx/1000f,endx/1000f,(y+weight/2)/1000f,startx/1000f,true,props);
+        drawHTrapeze(startx/1000f,(y-weight/2)/1000f,endx/1000f,endx/1000f,(y+weight/2)/1000f,startx/1000f,true,true,props);
       }
     }
   }
@@ -907,11 +933,11 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
 		  case EN_RIDGE:
 		  case EN_GROOVE:
 		    props=new BorderProps(area.getRuleStyle()==EN_GROOVE?Constants.EN_INSET:Constants.EN_OUTSET,area.getRuleThickness()/4,0,0,col,Mode.SEPARATE);
-		    drawRectangle(startx+ruleThickness/2,starty+3*ruleThickness/4,endx-startx-ruleThickness,ruleThickness/2,props,true);
+		    drawRectangle(startx+ruleThickness/2,starty+3*ruleThickness/4,endx-startx-ruleThickness,ruleThickness/2,props,true,true);
 		    break;
 		  default:
 		    props=new BorderProps(area.getRuleStyle(),area.getRuleThickness(),0,0,col,Mode.SEPARATE);
-		    drawHTrapeze(startx,starty+ruleThickness/2,endx,endx,starty+ruleThickness*1.5f,startx,true,props);
+		    drawHTrapeze(startx,starty+ruleThickness/2,endx,endx,starty+ruleThickness*1.5f,startx,true,true,props);
 		    break;
 		}
     super.renderLeader(area);

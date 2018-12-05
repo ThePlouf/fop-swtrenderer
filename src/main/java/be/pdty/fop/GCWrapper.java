@@ -18,7 +18,9 @@ package be.pdty.fop;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Color;
@@ -105,6 +107,8 @@ public class GCWrapper {
 	private int baseInterpolation;
 	private Region baseClip;
 
+  private Map<RGBA,List<PathData>> deferred=new HashMap<>();
+	
 	/**
 	 * Create a new GCWrapper.
 	 * 
@@ -526,12 +530,14 @@ public class GCWrapper {
 	 *            clipping path data.
 	 */
 	public void setClipping(PathData data) {
-		if (clip == data)
+	  if (clip == data)
 			return;
 		if (clip != null && data == null) {
+      commitDeferred();
 			clip = null;
 			dirtyClip = true;
 		} else if (clip == null || !Arrays.equals(clip.points, data.points) || !Arrays.equals(clip.types, data.types)) {
+      commitDeferred();
 			clip = data;
 			dirtyClip = true;
 		}
@@ -684,6 +690,102 @@ public class GCWrapper {
 		} finally {
 			path.dispose();
 		}
+	}
+	
+	/**
+	 * Fill the given path, potentially deferring the actual drawing but no later than
+	 * the next call to {@link #commitDeferred()}. This is useful to combine multiple
+	 * shapes into one single drawing operation.
+	 * @param data path data.
+	 */
+	public void fillPathDeferred(PathData data) {
+	  if(clip!=null) {
+	    fillPath(data);
+	    return;
+	  }
+	  List<PathData> list=deferred.get(color);
+	  if(list==null) {
+	    list=new ArrayList<>();
+	    deferred.put(color,list);
+	  }
+	  PathData copy=new PathData();
+	  copy.points=new float[data.points.length];
+	  copy.types=new byte[data.types.length];
+	  for(int i=0;i<data.points.length;i++) copy.points[i]=data.points[i];
+	  for(int i=0;i<data.types.length;i++) copy.types[i]=data.types[i];
+	  
+	  Transform save=new Transform(gc.getDevice());
+	  try {
+	    gc.getTransform(save);
+	    Transform tmp=new Transform(gc.getDevice(),transform);
+	    try {
+	      transformPath(copy,tmp);
+	    } finally {
+	      tmp.dispose();
+	    }
+
+	    gc.setTransform(save);
+	  } finally {
+	    save.dispose();
+	  }
+	  
+	  list.add(copy);
+	}
+	
+	/**
+	 * Commit any pending deferred operations.
+	 */
+	public void commitDeferred() {
+	  float[] oldTransform=transform;
+	  setTransform(null);
+	  
+	  for(Map.Entry<RGBA,List<PathData>> entry:deferred.entrySet()) {
+	    //Alternative implementation
+	    
+      /*List<PathData> list=entry.getValue();
+	    Region region=new Region(gc.getDevice());
+	    try {
+	      
+	      for(PathData data:list) {
+	        data=scale(data);
+	        pathToRegion(data,region);
+	      }
+	      setColor(entry.getKey());
+	      commit();
+	      gc.setClipping(region);
+	      gc.fillRectangle(region.getBounds());
+	    } finally {
+	      region.dispose();
+	    }
+	    */
+	    
+      int totalPoints=0;
+      int totalTypes=0;
+      List<PathData> list=entry.getValue();
+      for(PathData data:list) {
+        totalPoints+=data.points.length;
+        totalTypes+=data.types.length;
+      }
+      float[] points=new float[totalPoints];
+      byte[] types=new byte[totalTypes];
+      int currentPoint=0;
+      int currentType=0;
+      for(PathData data:list) {
+        for(int i=0;i<data.points.length;i++) points[currentPoint++]=data.points[i];
+        for(int i=0;i<data.types.length;i++) types[currentType++]=data.types[i];
+      }
+      
+      setColor(entry.getKey());
+      PathData data=new PathData();
+      data.points=points;
+      data.types=types;
+      gc.setFillRule(SWT.FILL_WINDING);
+      fillPath(data);
+	    
+	  }
+	  deferred.clear();
+	  
+	  setTransform(oldTransform);
 	}
 
 	/**
