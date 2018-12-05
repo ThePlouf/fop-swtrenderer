@@ -344,7 +344,7 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
 	  }
 	}
 	
-	private void drawRectangle(float x,float y,float w,float h,float weight,boolean allowDeferred) {
+	private void drawRectangle(float x,float y,float w,float h,float weight,boolean deferred) {
     PathData path=new PathData();
     path.types=new byte[] {
         SWT.PATH_MOVE_TO,
@@ -374,7 +374,7 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
         x-weight/2,y+weight/2
         
     };
-    if(allowDeferred) {
+    if(deferred) {
       wrapper.fillPathDeferred(path);
     } else {
       wrapper.fillPath(path);
@@ -383,7 +383,7 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
 	}
 	
 	//Draw a rectangle from x,y and of size w,h as chord.
-	private void drawRectangle(float x,float y,float w,float h,BorderProps props,boolean fill,boolean allowDeferred) {
+	private void drawRectangle(float x,float y,float w,float h,BorderProps props,boolean fill) {
     switch(props.style) {
       case Constants.EN_HIDDEN:
       case Constants.EN_NONE:
@@ -393,8 +393,8 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
         float weight=props.width/1000f;
         float leftMost=x-weight/2;
         float topMost=y-weight/2;
-        drawRectangle(leftMost+weight/6,topMost+weight/6,w+weight*2/3,h+weight*2/3,weight/3,allowDeferred);
-        drawRectangle(leftMost+5*weight/6,topMost+5*weight/6,w-weight*2/3,h-weight*2/3,weight/3,allowDeferred);
+        drawRectangle(leftMost+weight/6,topMost+weight/6,w+weight*2/3,h+weight*2/3,weight/3,true);
+        drawRectangle(leftMost+5*weight/6,topMost+5*weight/6,w-weight*2/3,h-weight*2/3,weight/3,true);
         break;
       }
       case Constants.EN_GROOVE:
@@ -406,6 +406,8 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
         Color uppercol = ColorUtil.lightenColor(props.color, -colFactor);
         Color lowercol = ColorUtil.lightenColor(props.color, colFactor);
         
+        //Because we'll be doing some overdrawing, we can't defer it.
+
         wrapper.setColor(Convert.toRGBA(uppercol));
         PathData path=new PathData();
         path.types=new byte[] {
@@ -483,11 +485,7 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
             x+weight/2,y+weight/2,
             x+weight/2,y+h-weight/2,
             x-weight/2,y+h+weight/2};
-        if(allowDeferred) {
-          wrapper.fillPathDeferred(path);
-        } else {
-          wrapper.fillPath(path);
-        }
+        wrapper.fillPathDeferred(path);
         
         wrapper.setColor(Convert.toRGBA(uppercol));
         path.points=new float[] {
@@ -499,12 +497,7 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
             x+w+weight/2,y+h+weight/2
             
         };
-        
-        if(allowDeferred) {
-          wrapper.fillPathDeferred(path);
-        } else {
-          wrapper.fillPath(path);
-        }
+        wrapper.fillPathDeferred(path);
         
         break;
       }
@@ -517,7 +510,7 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
       case Constants.EN_SOLID:
       default:
         wrapper.setColor(Convert.toRGBA(props.color));
-        drawRectangle(x,y,w,h,props.width/1000f,allowDeferred);
+        drawRectangle(x,y,w,h,props.width/1000f,true);
         break;
     }
     
@@ -548,6 +541,7 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
         BorderProps lowerp=new BorderProps(Constants.EN_SOLID,props.width/3,props.getRadiusStart(),props.getRadiusEnd(),lowercol,Mode.SEPARATE);
         BorderProps p2=new BorderProps(Constants.EN_SOLID,props.width/3,props.getRadiusStart(),props.getRadiusEnd(),props.color,Mode.SEPARATE);
         
+        //Because we'll be doing some overdrawing, we can't defer it.
         drawHTrapeze(x1,y1,x2,(x2*5+x3)/6,(y1*5+y3)/6,(x1*5+x4)/6,top,false,upperp);
         drawHTrapeze((x1+x4*5)/6,(y1+y3*5)/6,(x2+x3*5)/6,(x2*5+x3)/6,(y1*5+y3)/6,(x1*5+x4)/6,top,false,p2);
         drawHTrapeze((x1+x4*5)/6,(y1+y3*5)/6,(x2+x3*5)/6,x3,y3,x4,top,false,lowerp);
@@ -610,6 +604,8 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
         Color lowercol = ColorUtil.lightenColor(props.color, colFactor);
         BorderProps lowerp=new BorderProps(Constants.EN_SOLID,props.width/3,props.getRadiusStart(),props.getRadiusEnd(),lowercol,Mode.SEPARATE);
         BorderProps p2=new BorderProps(Constants.EN_SOLID,props.width/3,props.getRadiusStart(),props.getRadiusEnd(),props.color,Mode.SEPARATE);
+
+        //Because we'll be doing some overdrawing, we can't defer it.
         drawVTrapeze(x1,y1,(x1*5+x2)/6,(y1*5+y2)/6,(y3+y4*5)/6,y4,left,false,upperp);
         drawVTrapeze((x1+x2*5)/6,(y1+y2*5)/6,(x1*5+x2)/6,(y1*5+y2)/6,(y3+y4*5)/6,(y3*5+y4)/6,left,false,p2);
         drawVTrapeze((x1+x2*5)/6,(y1+y2*5)/6,x2,y2,y3,(y3*5+y4)/6,left,false,lowerp);
@@ -715,7 +711,7 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
         //we'll still go for 4xlines instead of drawing the rectangle.
         ((bpsTop.style!=Constants.EN_DASHED && bpsTop.style!=Constants.EN_DOTTED) || (outer(bpsTop) && outer(bpsBottom) && outer(bpsLeft) && outer(bpsRight))) && 
         bpsTop.color.equals(bpsBottom.color) && bpsBottom.color.equals(bpsLeft.color) && bpsLeft.color.equals(bpsRight.color) && bpsRight.color.equals(bpsTop.color)) {
-      drawRectangle(middle.x,middle.y,middle.w,middle.h,bpsTop,false,true);
+      drawRectangle(middle.x,middle.y,middle.w,middle.h,bpsTop,false);
     } else {
       Rect outer=new Rect(middle.x-widthLeft/2,middle.y-widthTop/2,middle.w+widthLeft/2+widthRight/2,middle.h+widthTop/2+widthBottom/2);
       Rect inner=new Rect(middle.x+widthLeft/2,middle.y+widthTop/2,middle.w-widthLeft/2-widthRight/2,middle.h-widthTop/2-widthBottom/2);
@@ -933,7 +929,7 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
 		  case EN_RIDGE:
 		  case EN_GROOVE:
 		    props=new BorderProps(area.getRuleStyle()==EN_GROOVE?Constants.EN_INSET:Constants.EN_OUTSET,area.getRuleThickness()/4,0,0,col,Mode.SEPARATE);
-		    drawRectangle(startx+ruleThickness/2,starty+3*ruleThickness/4,endx-startx-ruleThickness,ruleThickness/2,props,true,true);
+		    drawRectangle(startx+ruleThickness/2,starty+3*ruleThickness/4,endx-startx-ruleThickness,ruleThickness/2,props,true);
 		    break;
 		  default:
 		    props=new BorderProps(area.getRuleStyle(),area.getRuleThickness(),0,0,col,Mode.SEPARATE);
