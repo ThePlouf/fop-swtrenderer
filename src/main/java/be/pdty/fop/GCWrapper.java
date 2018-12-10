@@ -737,6 +737,7 @@ public class GCWrapper {
 	 */
 	public void commitDeferred() {
 	  float[] oldTransform=transform;
+	  RGBA oldColor=color;
 	  setTransform(null);
 	  
 	  for(Map.Entry<RGBA,List<PathData>> entry:deferred.entrySet()) {
@@ -786,6 +787,7 @@ public class GCWrapper {
 	  deferred.clear();
 	  
 	  setTransform(oldTransform);
+	  setColor(oldColor);
 	}
 
 	/**
