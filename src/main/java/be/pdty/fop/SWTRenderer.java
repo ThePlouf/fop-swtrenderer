@@ -29,7 +29,10 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Deque;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Stack;
@@ -38,10 +41,12 @@ import org.apache.fop.ResourceEventProducer;
 import org.apache.fop.apps.FOPException;
 import org.apache.fop.apps.FOUserAgent;
 import org.apache.fop.area.CTM;
+import org.apache.fop.area.LineArea;
 import org.apache.fop.area.PageViewport;
 import org.apache.fop.area.Trait;
 import org.apache.fop.area.inline.Image;
 import org.apache.fop.area.inline.InlineArea;
+import org.apache.fop.area.inline.InlineParent;
 import org.apache.fop.area.inline.Leader;
 import org.apache.fop.area.inline.SpaceArea;
 import org.apache.fop.area.inline.TextArea;
@@ -823,48 +828,152 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
     }
     restoreGraphicsState();
   }
+  
+  private boolean hasTextDeco(InlineArea elm) {
+    return elm.hasUnderline()||elm.hasOverline()||elm.hasLineThrough();
+  }
+  
+  private Deque<TextArea> getLinkedTextArea(TextArea elm) {
+    Deque<TextArea> ans=new LinkedList<>();
+    if(!hasTextDeco(elm)) {
+      ans.add(elm);
+      return ans;
+    }
+    
+    //Left
+    TextArea current=leftStack.peek().get(elm);
+    while(current!=null && hasTextDeco(current)) {
+      ans.addFirst(current);
+      current=leftStack.peek().get(current);
+    }
+    
+    ans.add(elm);
+    
+    //Right
+    current=rightStack.peek().get(elm);
+    while(current!=null && hasTextDeco(current)) {
+      ans.addLast(current);
+      current=rightStack.peek().get(current);
+    }
+    
+    return ans;
+  }
 
 	@Override
   protected void renderTextDecoration(FontMetrics fm,int fontsize,InlineArea inline,int baseline,int startx)
   {
-    boolean hasTextDeco=inline.hasUnderline()||inline.hasOverline()||inline.hasLineThrough();
-    if(hasTextDeco)
+    if(hasTextDeco(inline))
     {
       endTextObject();
+      
+      Deque<TextArea> linked=getLinkedTextArea((TextArea)inline);
+      
       float descender=fm.getDescender(fontsize)/1000f;
       float capHeight=fm.getCapHeight(fontsize)/1000f;
-      float endx=startx+inline.getIPD();
       float weight=fm.getDescender(fontsize)/-4000f;
+
+      int line=inline.getBlockProgressionOffset() + ((TextArea)inline).getBaselineOffset() + bpStack.peek().get(inline);
+      
+      
+      for(TextArea linkedArea:linked) {
+        if(linkedArea==inline) continue;
+
+        line=Math.max(line,linkedArea.getBlockProgressionOffset() + linkedArea.getBaselineOffset() + bpStack.peek().get(linkedArea));
+        
+        Font font = getFontFromArea(linkedArea);
+        Typeface tf = fontInfo.getFonts().get(font.getFontName());
+        
+        fontsize=Math.max(fontsize,linkedArea.getTraitAsInteger(Trait.FONT_SIZE));
+        descender=Math.min(descender,tf.getDescender(fontsize)/1000f);
+        capHeight=Math.max(capHeight,tf.getCapHeight(fontsize)/1000f);
+        weight=Math.max(weight,tf.getDescender(fontsize)/-4000f);
+      }
+      
+      float endx=startx+inline.getIPD();
       if(inline.hasUnderline())
       {
         Color ct=(Color)inline.getTrait(Trait.UNDERLINE_COLOR);
-        BorderProps props=new BorderProps(Constants.EN_SOLID,(int)(fm.getDescender(fontsize)/-8000f),0,0,ct,Mode.SEPARATE);
-        float y=baseline-descender;
+        BorderProps props=new BorderProps(Constants.EN_SOLID,0,0,0,ct,Mode.SEPARATE);
+        float y=line-(1.0f*descender);
         drawHTrapeze(startx/1000f,(y-weight/2)/1000f,endx/1000f,endx/1000f,(y+weight/2)/1000f,startx/1000f,true,true,props);
       }
       if(inline.hasOverline())
       {
         Color ct=(Color)inline.getTrait(Trait.OVERLINE_COLOR);
-        BorderProps props=new BorderProps(Constants.EN_SOLID,(int)(fm.getDescender(fontsize)/-8000f),0,0,ct,Mode.SEPARATE);
-        float y=(float)(baseline-(1.2*capHeight));
+        BorderProps props=new BorderProps(Constants.EN_SOLID,0,0,0,ct,Mode.SEPARATE);
+        float y=line-(1.2f*capHeight);
         drawHTrapeze(startx/1000f,(y-weight/2)/1000f,endx/1000f,endx/1000f,(y+weight/2)/1000f,startx/1000f,true,true,props);
       }
       if(inline.hasLineThrough())
       {
         Color ct=(Color)inline.getTrait(Trait.LINETHROUGH_COLOR);
-        BorderProps props=new BorderProps(Constants.EN_SOLID,(int)(fm.getDescender(fontsize)/-8000f),0,0,ct,Mode.SEPARATE);
-        float y=(float)(baseline-(0.45*capHeight));
+        BorderProps props=new BorderProps(Constants.EN_SOLID,0,0,0,ct,Mode.SEPARATE);
+        float y=line-(0.45f*capHeight);
         drawHTrapeze(startx/1000f,(y-weight/2)/1000f,endx/1000f,endx/1000f,(y+weight/2)/1000f,startx/1000f,true,true,props);
       }
     }
   }
+	
+  private TextArea discover(int bp,TextArea previousLeft,TextArea text,Map<TextArea,TextArea> l,Map<TextArea,TextArea> r,Map<TextArea,Integer> b) {
+    if(previousLeft!=null) {
+      r.put(previousLeft,text);
+      l.put(text,previousLeft);
+    }
+    b.put(text,bp);
+    return text;
+  }
+	
+  private TextArea discover(int bp,TextArea previousLeft,InlineParent parent,Map<TextArea,TextArea> l,Map<TextArea,TextArea> r,Map<TextArea,Integer> b) {
+    for(InlineArea child:parent.getChildAreas()) {
+      if(child instanceof TextArea) {
+        previousLeft=discover(bp,previousLeft,(TextArea)child,l,r,b);
+      } else if(child instanceof InlineParent) {
+        InlineParent ip=(InlineParent)child;
+        previousLeft=discover(bp+ip.getBlockProgressionOffset(),previousLeft,ip,l,r,b);
+      }
+    }
+    return previousLeft;
+  }
+	
+	private void discover(int bp,TextArea previousLeft,LineArea line,Map<TextArea,TextArea> l,Map<TextArea,TextArea> r,Map<TextArea,Integer> b) {
+	  for(Object child:line.getInlineAreas()) {
+	    if(child instanceof TextArea) {
+	      previousLeft=discover(bp,previousLeft,(TextArea)child,l,r,b);
+	    } else if(child instanceof InlineParent) {
+	      InlineParent ip=(InlineParent)child;
+	      previousLeft=discover(bp+ip.getBlockProgressionOffset(),previousLeft,ip,l,r,b);
+	    }
+	  }
+	}
+	
+	private Stack<Map<TextArea,TextArea>> leftStack=new Stack<>();
+	private Stack<Map<TextArea,TextArea>> rightStack=new Stack<>();
+  private Stack<Map<TextArea,Integer>> bpStack=new Stack<>();
   
+	@Override
+  protected void renderLineArea(LineArea line) {
+    Map<TextArea,TextArea> l=new HashMap<>();
+    Map<TextArea,TextArea> r=new HashMap<>();
+    Map<TextArea,Integer> b=new HashMap<>();
+    leftStack.push(l);
+    rightStack.push(r);
+    bpStack.push(b);
+    
+    discover(currentBPPosition+line.getSpaceBefore(),null,line,l,r,b);
+    
+    super.renderLineArea(line);
+    
+    leftStack.pop();
+    rightStack.pop();
+    bpStack.pop();
+  }
+	
 	@Override
 	public void renderText(TextArea text) {
 		renderInlineAreaBackAndBorders(text);
-
+		
 		int rx = currentIPPosition + text.getBorderAndPaddingWidthStart();
-		int bl = currentBPPosition + text.getBaselineOffset();
+		int bl = currentBPPosition + text.getBlockProgressionOffset() + text.getBaselineOffset();
 		int saveIP = currentIPPosition;
 
 		Font font = getFontFromArea(text);
