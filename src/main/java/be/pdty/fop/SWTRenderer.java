@@ -285,7 +285,7 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
 
 	@Override
 	protected void clipRect(float x, float y, float width, float height) {
-		state.combineClip(new GeneralPath(new Rectangle2D.Float(x, y, width, height)));
+		state.combineClip(new GeneralPath(new Rectangle2D.Float(x, y, width+1, height+1)));
 	}
 
 	@Override
