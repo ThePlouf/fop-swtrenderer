@@ -90,6 +90,7 @@ public class GCWrapper {
 	private float[] transform;
 	private boolean dirtyTransform;
 
+  //TODO wait a minute here, are these coordinates before or after transformation?
 	private PathData clip;
 	private boolean dirtyClip;
 
@@ -105,10 +106,11 @@ public class GCWrapper {
 	private int baseAntialias;
 	private int baseTextAntialias;
 	private int baseInterpolation;
+	
 	private Region baseClip;
 
   private Map<RGBA,List<PathData>> deferred=new HashMap<>();
-	
+  
 	/**
 	 * Create a new GCWrapper.
 	 * 
@@ -522,7 +524,7 @@ public class GCWrapper {
 			dirtyFont = true;
 		}
 	}
-
+	
 	/**
 	 * Set the clipping area.
 	 * 
@@ -533,11 +535,10 @@ public class GCWrapper {
 	  if (clip == data)
 			return;
 		if (clip != null && data == null) {
-      commitDeferred();
 			clip = null;
 			dirtyClip = true;
 		} else if (clip == null || !Arrays.equals(clip.points, data.points) || !Arrays.equals(clip.types, data.types)) {
-      commitDeferred();
+		  //TODO but shouldn't we apply the transformation or something? Or remember what transformation was used?
 			clip = data;
 			dirtyClip = true;
 		}
@@ -700,8 +701,8 @@ public class GCWrapper {
 	 */
 	public void fillPathDeferred(PathData data) {
 	  if(clip!=null) {
-	    fillPath(data);
-	    return;
+      fillPath(data);
+      return;
 	  }
 	  List<PathData> list=deferred.get(color);
 	  if(list==null) {
@@ -738,7 +739,9 @@ public class GCWrapper {
 	public void commitDeferred() {
 	  float[] oldTransform=transform;
 	  RGBA oldColor=color;
+	  PathData oldClipping=clip;
 	  setTransform(null);
+	  setClipping(null);
 	  
 	  for(Map.Entry<RGBA,List<PathData>> entry:deferred.entrySet()) {
 	    //Alternative implementation
@@ -787,6 +790,7 @@ public class GCWrapper {
 	  deferred.clear();
 	  
 	  setTransform(oldTransform);
+	  setClipping(oldClipping);
 	  setColor(oldColor);
 	}
 
