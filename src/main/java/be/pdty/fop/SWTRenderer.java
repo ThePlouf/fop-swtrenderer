@@ -868,9 +868,11 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
       
       Deque<TextArea> linked=getLinkedTextArea((TextArea)inline);
       
-      float descender=fm.getDescender(fontsize)/1000f;
+      //Descender seems to be wrongly set for built-in Courier font, so we won't be using it.
+      
+      //float descender=fm.getDescender(fontsize)/1000f;
       float capHeight=fm.getCapHeight(fontsize)/1000f;
-      float weight=fm.getDescender(fontsize)/-4000f;
+      float weight=fontsize/10f;
 
       int line=inline.getBlockProgressionOffset() + ((TextArea)inline).getBaselineOffset() + bpStack.peek().get(inline);
       
@@ -884,17 +886,17 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
         Typeface tf = fontInfo.getFonts().get(font.getFontName());
         
         fontsize=Math.max(fontsize,linkedArea.getTraitAsInteger(Trait.FONT_SIZE));
-        descender=Math.min(descender,tf.getDescender(fontsize)/1000f);
+        //descender=Math.min(descender,tf.getDescender(fontsize)/1000f);
         capHeight=Math.max(capHeight,tf.getCapHeight(fontsize)/1000f);
-        weight=Math.max(weight,tf.getDescender(fontsize)/-4000f);
+        weight=Math.max(weight,fontsize/16f);
       }
-      
+            
       float endx=startx+inline.getIPD();
       if(inline.hasUnderline())
       {
         Color ct=(Color)inline.getTrait(Trait.UNDERLINE_COLOR);
         BorderProps props=new BorderProps(Constants.EN_SOLID,0,0,0,ct,Mode.SEPARATE);
-        float y=line-(1.0f*descender);
+        float y=line+(0.7f*(fontsize-capHeight));
         drawHTrapeze(startx/1000f,(y-weight/2)/1000f,endx/1000f,endx/1000f,(y+weight/2)/1000f,startx/1000f,true,true,props);
       }
       if(inline.hasOverline())
@@ -1001,8 +1003,9 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
 			if (child instanceof WordArea) {
 				WordArea word = (WordArea) child;
 				String s = word.getWord();
-				wrapper.drawString(s, textCursor,
-				        y + 1.0f - font.getAscender() / 1000.0f + font.getDescender() / 1000.0f, true);
+				FontMetrics fm=font.getFontMetrics();
+				float adjust = (fm.getAscender(font.getFontSize())-fm.getDescender(font.getFontSize()))/1_000_000.0f;
+				wrapper.drawString(s, textCursor, y-adjust);
 				textCursor += wrapper.stringExtentWidth(s);
 			} else if (child instanceof SpaceArea) {
 				SpaceArea space = (SpaceArea) child;
