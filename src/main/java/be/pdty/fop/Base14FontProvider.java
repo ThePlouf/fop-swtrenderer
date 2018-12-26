@@ -33,7 +33,7 @@ import org.eclipse.swt.graphics.FontData;
  */
 @SuppressWarnings("nls")
 public class Base14FontProvider {
-	private static class FontInfo {
+	static class FontInfo {
 		public String name;
 		public int style;
 
@@ -133,7 +133,7 @@ public class Base14FontProvider {
 		if (disposed)
 			return;
 		for (Font f : fonts.values()) {
-			f.dispose();
+		  f.dispose();
 		}
 		fonts.clear();
 		disposed = true;
@@ -170,6 +170,7 @@ public class Base14FontProvider {
 	 */
 	public Font getFont(String name, int size) {
 		String key = name + ":" + size;
+				
 		Font ans = fonts.get(key);
 		if (ans != null)
 			return ans;
@@ -193,4 +194,24 @@ public class Base14FontProvider {
 
 		return ans;
 	}
+	
+	FontInfo getFontInfo(String name) {
+    String systemName = "";
+    int style = SWT.NORMAL;
+
+    FontInfo info = infos.get(name);
+    if (info != null) {
+      systemName = info.name;
+      style = info.style;
+    } else {
+      systemName = name;
+      if (name.contains("Oblique") || name.contains("Italic"))
+        style |= SWT.ITALIC;
+      if (name.contains("Bold") || name.contains("Strong"))
+        style |= SWT.BOLD;
+    }
+    
+    return new FontInfo(systemName,style);
+	}
+	
 }

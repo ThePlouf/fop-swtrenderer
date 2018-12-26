@@ -16,6 +16,10 @@
 
 package be.pdty.fop;
 
+import java.awt.font.FontRenderContext;
+import java.awt.font.TextAttribute;
+import java.awt.font.TextLayout;
+import java.awt.geom.AffineTransform;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -26,6 +30,7 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Device;
 import org.eclipse.swt.graphics.Font;
+import org.eclipse.swt.graphics.FontMetrics;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.LineAttributes;
@@ -36,6 +41,8 @@ import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.graphics.Region;
 import org.eclipse.swt.graphics.Transform;
 import org.eclipse.swt.printing.Printer;
+
+import be.pdty.fop.Base14FontProvider.FontInfo;
 
 /**
  * Wraps a GC to offer multiple additional services: Decimal-precision drawing
@@ -71,6 +78,7 @@ import org.eclipse.swt.printing.Printer;
  */
 public class GCWrapper {
 	private static final float PF = 200f;
+	private static final boolean USE_AWT_FONT_GLYPHS = true;
 
 	private GC gc;
 	private boolean disposed;
@@ -90,7 +98,7 @@ public class GCWrapper {
 	private float[] transform;
 	private boolean dirtyTransform;
 
-  //TODO wait a minute here, are these coordinates before or after transformation?
+  //Expressed in the base transform
 	private PathData clip;
 	private boolean dirtyClip;
 
@@ -107,8 +115,10 @@ public class GCWrapper {
 	private int baseTextAntialias;
 	private int baseInterpolation;
 	
+	//Expressed in the base transform
 	private Region baseClip;
 
+	//List of deferred paths, expressed in the base transform.
   private Map<RGBA,List<PathData>> deferred=new HashMap<>();
   
 	/**
@@ -174,16 +184,21 @@ public class GCWrapper {
 		dirtyClip = false;
 	}
 
-	private static PathData scale(PathData data) {
+	private static PathData scale(PathData data,float factorX,float factorY) {
 		float[] points = new float[data.points.length];
-		for (int i = 0; i < data.points.length; i++) {
-			points[i] = data.points[i] * PF;
+		for (int i = 0; i < data.points.length; i+=2) {
+			points[i+0] = data.points[i+0] * factorX;
+      points[i+1] = data.points[i+1] * factorY;
 		}
 		PathData ans = new PathData();
 		ans.points = points;
 		ans.types = data.types;
 		return ans;
 	}
+
+	private static PathData scale(PathData data) {
+	  return scale(data,PF,PF);
+  }
 
 	private static void transformPath(PathData data, Transform transform) {
 		float[] f = new float[2];
@@ -318,6 +333,36 @@ public class GCWrapper {
 			dirtyColor = false;
 		}
 
+		if (dirtyClip) {
+		  // Both the base and the requested clipping regions are expressed in the base transform
+      Transform save = new Transform(gc.getDevice());
+      try {
+        gc.getTransform(save);
+        gc.setTransform(baseTransform);
+        
+        if(clip!=null) {
+          Region newRegion = new Region(gc.getDevice());
+          try {
+            pathToRegion(scale(clip,sx,sy),newRegion);
+            if(baseClip!=null) {
+              newRegion.intersect(baseClip);
+            }
+            gc.setClipping(newRegion);
+          } finally {
+            newRegion.dispose();
+          }
+        } else {
+          gc.setClipping(baseClip);
+        }
+        
+        gc.setTransform(save);
+        dirtyClip = false;
+      } finally {
+        save.dispose();
+      }
+      
+		}
+		
 		if (dirtyTransform) {
 			Transform swtTransform = new Transform(gc.getDevice());
 			Transform userTransform = transform == null ? new Transform(gc.getDevice())
@@ -335,76 +380,7 @@ public class GCWrapper {
 				swtTransform.dispose();
 			}
 		}
-
-		if (dirtyClip) {
-			// Okay so this is quite complicated. We will try to merge the base
-			// clipping area with the requested area, but each of those are
-			// expressed using different transformation matrixes so we need to
-			// be careful not to get confused...
-
-			// Note: one could believe it would have been much easier to just
-			// use a combination of setClipping/getClipping to transform from
-			// path to region, as well as to use
-			// setClipping/setTransform/getClipping to perform the
-			// transformation, unfortunately there seems to be some issues with
-			// getClipping on MacOSX that makes it run extremely slowly (several
-			// seconds per single call), so the following approach is used
-			// instead.
-
-			Transform currentTransform = new Transform(gc.getDevice());
-			try {
-				// Let's save the current transform as we will need to restore
-				// it back
-				gc.getTransform(currentTransform);
-				if (clip != null) {
-					Region newRegion = new Region(gc.getDevice());
-					Transform currentToBase = new Transform(gc.getDevice());
-					try {
-						// We will express the current requested clip in the
-						// base transform so that we can merge it with the base
-						// clipping area.
-
-						// First we scale the requested path
-						PathData scaled = scale(clip);
-
-						// Then we build a "current transform to base transform"
-						// matrix
-						gc.getTransform(currentToBase);
-						currentToBase.invert();
-						currentToBase.multiply(baseTransform);
-						currentToBase.invert();
-
-						// We now express the requested clip path in the current
-						// base, then convert it as a region
-						transformPath(scaled, currentToBase);
-						pathToRegion(scaled, newRegion);
-
-						// Good! Now intersect this region with the base
-						// clipping area
-						newRegion.intersect(baseClip);
-
-						// Set this clipping, using the base transform
-						gc.setTransform(baseTransform);
-						gc.setClipping(newRegion);
-
-						// And finally, move back to current transform
-						gc.setTransform(currentTransform);
-					} finally {
-						currentToBase.dispose();
-						newRegion.dispose();
-					}
-				} else {
-					gc.setTransform(baseTransform);
-					gc.setClipping(baseClip);
-					gc.setTransform(currentTransform);
-				}
-			} finally {
-				currentTransform.dispose();
-			}
-
-			dirtyClip = false;
-		}
-
+		
 		if (dirtyLineAttributes) {
 			LineAttributes copy = new LineAttributes(lineAttributes.width * PF);
 			copy.cap = lineAttributes.cap;
@@ -532,16 +508,30 @@ public class GCWrapper {
 	 *            clipping path data.
 	 */
 	public void setClipping(PathData data) {
-	  if (clip == data)
-			return;
-		if (clip != null && data == null) {
-			clip = null;
-			dirtyClip = true;
-		} else if (clip == null || !Arrays.equals(clip.points, data.points) || !Arrays.equals(clip.types, data.types)) {
-		  //TODO but shouldn't we apply the transformation or something? Or remember what transformation was used?
-			clip = data;
-			dirtyClip = true;
-		}
+	  if(data==null) {
+	    if(clip==null) return;
+      clip = null;
+      dirtyClip = true;
+	    return;
+	  }
+	  
+	  //Let's transform the requested clipping area to the base transform
+    Transform tmp=new Transform(gc.getDevice(),transform);
+    try {
+      PathData copy=new PathData();
+      copy.points=new float[data.points.length];
+      copy.types=new byte[data.types.length];
+      for(int i=0;i<data.points.length;i++) copy.points[i]=data.points[i];
+      for(int i=0;i<data.types.length;i++) copy.types[i]=data.types[i];
+      transformPath(copy,tmp);
+    
+	    if (clip == null || !Arrays.equals(clip.points, copy.points) || !Arrays.equals(clip.types, copy.types)) {	    
+	      clip = copy;
+	      dirtyClip = true;
+	    }
+    } finally {
+      tmp.dispose();
+    }
 	}
 
 	/**
@@ -617,12 +607,47 @@ public class GCWrapper {
 	 *            x.
 	 * @param y
 	 *            y.
-	 * @param transparent
-	 *            true if no background should be displayed.
 	 */
-	public void drawString(String s, float x, float y, boolean transparent) {
+	public void drawString(String s, float x, float y) {
 		commit();
-		gc.drawString(s, (int) (x * PF), (int) (y * PF), transparent);
+		
+    if(!USE_AWT_FONT_GLYPHS) {
+      Color col=gc.getForeground();
+      gc.setForeground(gc.getDevice().getSystemColor(SWT.COLOR_MAGENTA));
+      gc.drawString(s, (int) (x * PF), (int) (y * PF), true);
+      gc.setForeground(col);
+    } else {
+      FontInfo nfo=fontCache.getFontInfo(fontName);
+      int fontStyle=java.awt.Font.PLAIN;
+      if((nfo.style&SWT.ITALIC)!=0) fontStyle|=java.awt.Font.ITALIC;
+      if((nfo.style&SWT.BOLD)!=0) fontStyle|=java.awt.Font.BOLD;
+      
+  		java.awt.Font awtFont=new java.awt.Font(nfo.name,fontStyle, (int)(PF * fontSize / (1000.0f)));
+  		
+  		Map attributes=awtFont.getAttributes();
+  		attributes.put(TextAttribute.KERNING,TextAttribute.KERNING_ON);
+  		awtFont = awtFont.deriveFont(attributes);
+  		
+  		FontRenderContext context = new FontRenderContext(null,true,true);
+      TextLayout layout=new TextLayout(s,awtFont,context);
+      
+      //Workaround SWT bug 319125
+      gc.setFont(gc.getFont());
+      FontMetrics fm=gc.getFontMetrics();
+  		
+      AffineTransform awtTransform=new AffineTransform();
+      awtTransform.translate(x*PF,y*PF+fm.getLeading()+fm.getAscent());
+      java.awt.Shape shape=layout.getOutline(awtTransform);
+  		PathData pathData=Convert.toPathData(shape);
+  		Path path=new Path(gc.getDevice(),pathData);
+  		try {
+  		  gc.fillPath(path);
+  		} finally {
+  		  path.dispose();
+  		}
+    }
+		
+		
 	}
 
 	/**
@@ -715,20 +740,12 @@ public class GCWrapper {
 	  for(int i=0;i<data.points.length;i++) copy.points[i]=data.points[i];
 	  for(int i=0;i<data.types.length;i++) copy.types[i]=data.types[i];
 	  
-	  Transform save=new Transform(gc.getDevice());
-	  try {
-	    gc.getTransform(save);
-	    Transform tmp=new Transform(gc.getDevice(),transform);
-	    try {
-	      transformPath(copy,tmp);
-	    } finally {
-	      tmp.dispose();
-	    }
-
-	    gc.setTransform(save);
-	  } finally {
-	    save.dispose();
-	  }
+    Transform tmp=new Transform(gc.getDevice(),transform);
+    try {
+      transformPath(copy,tmp);
+    } finally {
+      tmp.dispose();
+    }
 	  
 	  list.add(copy);
 	}
