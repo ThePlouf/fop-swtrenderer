@@ -44,6 +44,7 @@ import org.apache.fop.area.CTM;
 import org.apache.fop.area.LineArea;
 import org.apache.fop.area.PageViewport;
 import org.apache.fop.area.Trait;
+import org.apache.fop.area.inline.FilledArea;
 import org.apache.fop.area.inline.Image;
 import org.apache.fop.area.inline.InlineArea;
 import org.apache.fop.area.inline.InlineParent;
@@ -971,6 +972,73 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
   }
 	
 	@Override
+  protected void renderInlineParent(InlineParent ip) {
+	  if(!(ip instanceof FilledArea) || ((ip.getBidiLevel() & 1) == 0)) {
+	    super.renderInlineParent(ip);
+	    return;
+	  }
+	  
+	  //This is a left-aligned filled area (populated by a leader) - we'll try to coalesce
+    List children = ip.getChildAreas();
+    if(children.size()==0) {
+      super.renderInlineParent(ip);
+      return;
+    }
+    
+    TextArea first = (TextArea)children.get(0);
+
+    boolean coalesce=true;
+    StringBuilder concat=new StringBuilder();
+    
+    int totalIPD=0;
+    for (Object aChildren : children) {
+      InlineArea inline = (InlineArea) aChildren;
+      if(!(inline instanceof TextArea)) {
+        coalesce=false;
+        break;
+      }
+      //TODO do some additional validation here and there
+      concat.append(((TextArea)inline).getText());
+      totalIPD+=inline.getAllocIPD();
+    }
+    
+    if(!coalesce) {
+      super.renderInlineParent(ip);
+      return;
+    }
+    
+    
+    //Coalesce is successful
+    //Do one last check to ensure there is not much difference between coalesced and original
+    Font font = getFontFromArea(first);
+    Typeface tf = fontInfo.getFonts().get(font.getFontName());
+    state.updateFont(tf.getFontName(), font.getFontSize());
+    state.configureGC(wrapper);
+    float distance=Math.abs(totalIPD/1000.0f-wrapper.stringExtentWidth(concat.toString()));
+    if(distance>0.5f) {
+      //We allow for max one half pixel difference
+      //Too much distance, we missed something!
+      super.renderInlineParent(ip);
+      return;
+    }
+    
+    renderInlineAreaBackAndBorders(ip);
+
+    int rx = currentIPPosition + ip.getBorderAndPaddingWidthStart() + first.getBorderAndPaddingWidthStart();
+    int bl = currentBPPosition + ip.getBlockProgressionOffset() + first.getBlockProgressionOffset() + first.getBaselineOffset();
+    
+    Color col = (Color) first.getTrait(Trait.COLOR);
+    wrapper.setColor(Convert.toRGBA(col));
+
+    FontMetrics fm=font.getFontMetrics();
+    float adjust = (fm.getAscender(font.getFontSize())-fm.getDescender(font.getFontSize()))/1_000_000.0f;
+    wrapper.drawString(concat.toString(), rx / 1000f, (bl / 1000f)-adjust);
+    
+    
+    currentIPPosition += ip.getAllocIPD();
+  }
+  
+	@Override
 	public void renderText(TextArea text) {
 		renderInlineAreaBackAndBorders(text);
 		
@@ -997,28 +1065,59 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
 	private void renderText(TextArea text, Font font, float x, float y) {
 		float textCursor = x;
 
-		Iterator iter = text.getChildAreas().iterator();
-		while (iter.hasNext()) {
-			InlineArea child = (InlineArea) iter.next();
-			if (child instanceof WordArea) {
-				WordArea word = (WordArea) child;
-				String s = word.getWord();
-				FontMetrics fm=font.getFontMetrics();
-				float adjust = (fm.getAscender(font.getFontSize())-fm.getDescender(font.getFontSize()))/1_000_000.0f;
-				wrapper.drawString(s, textCursor, y-adjust);
-				textCursor += wrapper.stringExtentWidth(s);
-			} else if (child instanceof SpaceArea) {
-				SpaceArea space = (SpaceArea) child;
-				String s = space.getSpace();
-				char sp = s.charAt(0);
-				int tws = (space.isAdjustable() ? text.getTextWordSpaceAdjust() + 2 * text.getTextLetterSpaceAdjust()
-				        : 0);
+		//Optimize: if trivial set of words and spaces, append everything and draw in one go
+		StringBuilder concat=new StringBuilder();
+    Iterator iter = text.getChildAreas().iterator();
+    boolean trivial=true;
+    while (iter.hasNext()) {
+      InlineArea child = (InlineArea) iter.next();
+      if (child instanceof WordArea) {
+        WordArea word = (WordArea) child;
+        concat.append(word.getWord());
+      } else if (child instanceof SpaceArea) {
+        SpaceArea space = (SpaceArea) child;
+        if(!space.getSpace().equals(" ")) { //$NON-NLS-1$
+          trivial=false;
+          break;
+        }
+        if(space.isAdjustable() && (text.getTextWordSpaceAdjust()!=0 || text.getTextLetterSpaceAdjust()!=0)) {
+          trivial=false;
+          break;
+        }
+        concat.append(space.getSpace());
+      } else {
+        trivial=false;
+        break;
+      }
+    }
 
-				textCursor += (font.getCharWidth(sp) + tws) / 1000f;
-			} else {
-				throw new IllegalStateException("Unsupported child element: " + child); //$NON-NLS-1$
-			}
-		}
+    FontMetrics fm=font.getFontMetrics();
+    float adjust = (fm.getAscender(font.getFontSize())-fm.getDescender(font.getFontSize()))/1_000_000.0f;
+		
+    if(trivial) {
+      wrapper.drawString(concat.toString(), textCursor, y-adjust);
+    } else {
+  		iter = text.getChildAreas().iterator();
+  		while (iter.hasNext()) {
+  			InlineArea child = (InlineArea) iter.next();
+  			if (child instanceof WordArea) {
+  				WordArea word = (WordArea) child;
+  				String s = word.getWord();
+  				wrapper.drawString(s, textCursor, y-adjust);
+  				textCursor += wrapper.stringExtentWidth(s);
+  			} else if (child instanceof SpaceArea) {
+  				SpaceArea space = (SpaceArea) child;
+  				String s = space.getSpace();
+  				char sp = s.charAt(0);
+  				int tws = (space.isAdjustable() ? text.getTextWordSpaceAdjust() + 2 * text.getTextLetterSpaceAdjust()
+  				        : 0);
+  
+  				textCursor += (font.getCharWidth(sp) + tws) / 1000f;
+  			} else {
+  				throw new IllegalStateException("Unsupported child element: " + child); //$NON-NLS-1$
+  			}
+  		}
+    }
 	}
 
 	@Override
