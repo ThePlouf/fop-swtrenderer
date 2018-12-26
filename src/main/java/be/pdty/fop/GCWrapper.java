@@ -78,7 +78,7 @@ import be.pdty.fop.Base14FontProvider.FontInfo;
  */
 public class GCWrapper {
 	private static final float PF = 200f;
-	private static final boolean USE_AWT_FONT_GLYPHS = true;
+	private static final boolean USE_AWT_FONT_GLYPHS = false;
 
 	private GC gc;
 	private boolean disposed;
@@ -610,12 +610,12 @@ public class GCWrapper {
 	 */
 	public void drawString(String s, float x, float y) {
 		commit();
-		
+				
     if(!USE_AWT_FONT_GLYPHS) {
-      Color col=gc.getForeground();
-      gc.setForeground(gc.getDevice().getSystemColor(SWT.COLOR_MAGENTA));
+      //Color col=gc.getForeground();
+      //gc.setForeground(gc.getDevice().getSystemColor(SWT.COLOR_MAGENTA));
       gc.drawString(s, (int) (x * PF), (int) (y * PF), true);
-      gc.setForeground(col);
+      //gc.setForeground(col);
     } else {
       FontInfo nfo=fontCache.getFontInfo(fontName);
       int fontStyle=java.awt.Font.PLAIN;
