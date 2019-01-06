@@ -9,30 +9,29 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Test.
+ * Geometry.
  */
 public class Geometry
 {
 
-  //
-  private static void appendLine(float c1x,float c1y,float c2x,float c2y,float nx,float ny,float extent,int capType,boolean first,Path2D.Float target) {
-    //Current line
+  private static void appendSegment(float c1x,float c1y,float c2x,float c2y,float nx,float ny,float offset,int joinType,boolean first,Path2D.Float target) {
+    //Current segment
     float cdx=c2x-c1x;
     float cdy=c2y-c1y;
     float clength=(float)Math.sqrt(cdx*cdx+cdy*cdy);
     cdx=cdx/clength;
     cdy=cdy/clength;
-    float lc2x=c2x+cdy*extent;
-    float lc2y=c2y-cdx*extent;
+    float lc2x=c2x+cdy*offset;
+    float lc2y=c2y-cdx*offset;
     
-    //Next line
+    //Next segment
     float ndx=nx-c2x;
     float ndy=ny-c2y;
     float nlength=(float)Math.sqrt(ndx*ndx+ndy*ndy);
     ndx=ndx/nlength;
     ndy=ndy/nlength;
-    float ln1x=c2x+ndy*extent;
-    float ln1y=c2y-ndx*extent;
+    float ln1x=c2x+ndy*offset;
+    float ln1y=c2y-ndx*offset;
 
     //Miter junction point
     float mdx=cdy+ndy;
@@ -58,7 +57,7 @@ public class Geometry
       target.lineTo(ln1x,ln1y);
     } else {
       //A convex point
-      switch(capType) {
+      switch(joinType) {
         case BasicStroke.JOIN_BEVEL:
           //Simple bevel, we'll go to our end first, then to the beginning of next line.
           if(first) {
@@ -84,8 +83,8 @@ public class Geometry
             target.lineTo(ln1x,ln1y);
           } else {
             //Actual miter.
-            float mitX=c2x+mdx*extent/cos;
-            float mitY=c2y+mdy*extent/cos;
+            float mitX=c2x+mdx*offset/cos;
+            float mitY=c2y+mdy*offset/cos;
             if(first) {
               target.moveTo(mitX,mitY);
             } else {
@@ -94,33 +93,34 @@ public class Geometry
           }
           break;
         case BasicStroke.JOIN_ROUND:
-          //
+          //Let's go to the beginning of the joint first.
           if(first) {
             target.moveTo(lc2x,lc2y);
           } else {
             target.lineTo(lc2x,lc2y);
           }
 
-          if(extent>0) {
+          //Draw the circle.
+          if(offset>0) {
             //Starting angle
             float angle=(float)Math.atan2(-cdx,cdy);
             //Length of arc
             float arc=(float)Math.acos(cos)*2;
             //Arc increment
-            float increment=10f/extent;
+            float increment=10f/offset;
             if(increment>0.5f) increment=0.5f;
             //Ending angle
             float angleEnd=angle+arc-increment;
             
             //Let's try to ensure the partial increment
             //due to rounding error is evenly spread on two ends
-            float offset=arc-((int)(arc/increment+0.5f))*increment;
-            angle+=offset/2;
+            float off=arc-((int)(arc/increment+0.5f))*increment;
+            angle+=off/2;
             
             while(angle<angleEnd) {
               angle+=increment;
-              float x=(float)(Math.cos(angle)*extent+c2x);
-              float y=(float)(Math.sin(angle)*extent+c2y);
+              float x=(float)(Math.cos(angle)*offset+c2x);
+              float y=(float)(Math.sin(angle)*offset+c2y);
               target.lineTo(x,y);
             }
             target.lineTo(ln1x,ln1y);
@@ -139,7 +139,7 @@ public class Geometry
     return ans;
   }
   
-  private static Area renderSegment(List<Line2D.Float> lines,float extent,int capType) {
+  private static Area renderSimpleShape(List<Line2D.Float> lines,float offset,int joinType) {
     Path2D.Float ans = new Path2D.Float(Path2D.WIND_NON_ZERO);
     
     for(int i=0;i<lines.size();i++) {
@@ -149,7 +149,7 @@ public class Geometry
       Line2D.Float current=lines.get(i);
       Line2D.Float next=lines.get(nextIndex);
       
-      appendLine(current.x1,current.y1,current.x2,current.y2,next.x2,next.y2,extent,capType,i==0,ans);
+      appendSegment(current.x1,current.y1,current.x2,current.y2,next.x2,next.y2,offset,joinType,i==0,ans);
     }
     
     //Creating an area with non-zero winding will perform a proper cleanup of the overlapping areas
@@ -161,11 +161,11 @@ public class Geometry
   /**
    * Return an area that is the offset of the given input (closed) shape.
    * @param shape input shape.
-   * @param extent offset extent (must be greater than 0).
+   * @param offset offset (must be greater than 0).
    * @param joinType joinType, use constants from BasicStroke.
    * @return offset area.
    */
-  public static Area offsetShape(Shape shape,float extent,int joinType) {
+  public static Area offsetShape(Shape shape,float offset,int joinType) {
     PathIterator pi=shape.getPathIterator(null,1f);
     float[] data=new float[2];
     
@@ -173,7 +173,7 @@ public class Geometry
     float firstY=0f;
     float previousX=0f;
     float previousY=0f;
-    List<List<Line2D.Float>> segments=new ArrayList<>();
+    List<List<Line2D.Float>> simpleShapes=new ArrayList<>();
     List<Line2D.Float> current=new ArrayList<>();
     
     while(!pi.isDone()) {
@@ -184,7 +184,7 @@ public class Geometry
       {
         case PathIterator.SEG_MOVETO:
           if(current.size()>0) {
-            segments.add(current);
+            simpleShapes.add(current);
             current=new ArrayList<>();
           }
           firstX=data[0];
@@ -206,7 +206,7 @@ public class Geometry
             current.add(new Line2D.Float(previousX,previousY,targetX,targetY));
           }
           if(current.size()>0) {
-            segments.add(current);
+            simpleShapes.add(current);
             current=new ArrayList<>();
           }
           break;
@@ -219,15 +219,13 @@ public class Geometry
     }    
     
     Area finalArea=new Area();
-    for(int s=0;s<segments.size();s++) {
-      if(area(segments.get(s))>0) {
-        finalArea.add(renderSegment(segments.get(s),extent/2.0f,joinType));
+    for(int s=0;s<simpleShapes.size();s++) {
+      if(area(simpleShapes.get(s))>0) {
+        finalArea.add(renderSimpleShape(simpleShapes.get(s),offset/2.0f,joinType));
       }
     }
     
     return finalArea;
   }
   
-
-
 }
