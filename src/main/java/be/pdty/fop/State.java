@@ -21,7 +21,7 @@ import java.awt.Color;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Area;
 import java.awt.geom.GeneralPath;
-import java.awt.geom.Rectangle2D;
+import java.awt.geom.NoninvertibleTransformException;
 
 /**
  * Keeps information about the current state of the SWTRenderer. This class is
@@ -73,7 +73,7 @@ public class State {
 	 *            GCWrapper to configure.
 	 */
 	public void configureGC(GCWrapper gc) {
-		gc.setColor(Convert.toRGBA(color));
+	  gc.setColor(Convert.toRGBA(color));
 
 		if (fontName != null) {
 			gc.setFont(fontName, fontSize);
@@ -83,22 +83,7 @@ public class State {
 		if (clip == null) {
 			gc.setClipping(null);
 		} else {
-			// Okay so drawing lines expecting pixel-perfect 1pix-wide clipping
-			// is not going to happen with SWT,
-			// so if we receive a super-thin clipping area we try to expand it a
-			// little bit...
-			Rectangle2D rect = clip.getBounds2D();
-			float x = 1f;
-			if (rect.getWidth() <= 1.1) {
-				rect.setRect(rect.getX() - x, rect.getY(), rect.getWidth() + 2 * x, rect.getHeight());
-				gc.setClipping(Convert.toPathData(rect));
-			} else if (rect.getHeight() <= 1.1) {
-				rect.setRect(rect.getX(), rect.getY() - x, rect.getWidth(), rect.getHeight() + 2 * x);
-				gc.setClipping(Convert.toPathData(rect));
-			} else {
-				gc.setClipping(Convert.toPathData(clip));
-			}
-
+		  gc.setClipping(Convert.toPathData(clip));
 		}
 		gc.setLineAttributes(Convert.toLineAttributes(stroke));
 	}
@@ -158,7 +143,25 @@ public class State {
 	 *            transform to add.
 	 */
 	public void combineTransform(AffineTransform tf) {
-		transform = new AffineTransform(transform);
-		transform.concatenate(tf);
+	  if(tf.getDeterminant()==0.0) {
+	    //We will refuse this transformation...
+	    return;
+	  }
+    try
+    {
+      if(clip!=null) {
+        clip.transform(transform);
+  	  }
+  		transform = new AffineTransform(transform);
+  		transform.concatenate(tf);
+  		if(clip!=null) {
+  		  clip.transform(transform.createInverse());
+  		}
+		}
+    catch(NoninvertibleTransformException ex)
+    {
+      //Not supposed to happen as we refuse non-invertible matrices...
+      throw new RuntimeException(ex);
+    }
 	}
 }

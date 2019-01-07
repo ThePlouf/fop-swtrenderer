@@ -560,7 +560,7 @@ public class GCWrapper {
 	 *            height.
 	 */
 	public void fillRectangle(float x, float y, float w, float h) {
-		commit();
+	  commit();
 		gc.fillRectangle((int) (x * PF), (int) (y * PF), (int) (w * PF), (int) (h * PF));
 	}
 
@@ -675,31 +675,8 @@ public class GCWrapper {
 	public void drawImage(Image image, float x, float y) {
 		commit();
 		Rectangle b = image.getBounds();
-
-		// Disable clipping (not sure whether there is a bug with AWT or FOP but
-		// images are truncated when honoring clipping requests while drawing
-		// images)
-		Transform currentTransform = new Transform(gc.getDevice());
-		try {
-			// Save the current clipping region and transform
-			gc.getTransform(currentTransform);
-
-			// Set the original clipping region using the original transform
-			gc.setTransform(baseTransform);
-			gc.setClipping(baseClip);
-
-			// Switch back to the current transform
-			gc.setTransform(currentTransform);
-
-			// The actual drawing
-			gc.drawImage(image, b.x, b.y, b.width, b.height, (int) (x * PF), (int) (y * PF), (int) (b.width * PF),
+		gc.drawImage(image, b.x, b.y, b.width, b.height, (int) (x * PF), (int) (y * PF), (int) (b.width * PF),
 			        (int) (b.height * PF));
-
-			// Request to reset clipping at next commit
-			dirtyClip = true;
-		} finally {
-			currentTransform.dispose();
-		}
 	}
 
 	/**
