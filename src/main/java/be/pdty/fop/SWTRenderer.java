@@ -29,10 +29,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.Deque;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Stack;
@@ -94,6 +91,7 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
 	private GeneralPath currentPath;
 	private State state;
 	private GCWrapper wrapper;
+	private TextOutput textOutput;
 
 	/**
 	 * Default constructor
@@ -137,6 +135,7 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
 			@Override
 			public void print(GC targetGc) {
 				wrapper = new GCWrapper(targetGc);
+				textOutput=new TextOutput(wrapper,true);
 				try {
 					state = new State();
 					stateStack = new Stack<>();
@@ -830,145 +829,10 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
     restoreGraphicsState();
   }
   
-  private boolean hasTextDeco(InlineArea elm) {
-    return elm.hasUnderline()||elm.hasOverline()||elm.hasLineThrough();
-  }
-  
-  private Deque<TextArea> getLinkedTextArea(TextArea elm) {
-    Deque<TextArea> ans=new LinkedList<>();
-    if(!hasTextDeco(elm)) {
-      ans.add(elm);
-      return ans;
-    }
-    
-    //Left
-    TextArea current=leftStack.peek().get(elm);
-    while(current!=null && hasTextDeco(current)) {
-      ans.addFirst(current);
-      current=leftStack.peek().get(current);
-    }
-    
-    ans.add(elm);
-    
-    //Right
-    current=rightStack.peek().get(elm);
-    while(current!=null && hasTextDeco(current)) {
-      ans.addLast(current);
-      current=rightStack.peek().get(current);
-    }
-    
-    return ans;
-  }
-
-	@Override
-  protected void renderTextDecoration(FontMetrics fm,int fontsize,InlineArea inline,int baseline,int startx)
-  {
-    if(hasTextDeco(inline))
-    {
-      endTextObject();
-      
-      Deque<TextArea> linked=getLinkedTextArea((TextArea)inline);
-      
-      //Descender seems to be wrongly set for built-in Courier font, so we won't be using it.
-      
-      //float descender=fm.getDescender(fontsize)/1000f;
-      float capHeight=fm.getCapHeight(fontsize)/1000f;
-      float weight=fontsize/10f;
-
-      int line=inline.getBlockProgressionOffset() + ((TextArea)inline).getBaselineOffset() + bpStack.peek().get(inline);
-      
-      
-      for(TextArea linkedArea:linked) {
-        if(linkedArea==inline) continue;
-
-        line=Math.max(line,linkedArea.getBlockProgressionOffset() + linkedArea.getBaselineOffset() + bpStack.peek().get(linkedArea));
-        
-        Font font = getFontFromArea(linkedArea);
-        Typeface tf = fontInfo.getFonts().get(font.getFontName());
-        
-        fontsize=Math.max(fontsize,linkedArea.getTraitAsInteger(Trait.FONT_SIZE));
-        //descender=Math.min(descender,tf.getDescender(fontsize)/1000f);
-        capHeight=Math.max(capHeight,tf.getCapHeight(fontsize)/1000f);
-        weight=Math.max(weight,fontsize/16f);
-      }
-            
-      float endx=startx+inline.getIPD();
-      if(inline.hasUnderline())
-      {
-        Color ct=(Color)inline.getTrait(Trait.UNDERLINE_COLOR);
-        BorderProps props=new BorderProps(Constants.EN_SOLID,0,0,0,ct,Mode.SEPARATE);
-        float y=line+(0.7f*(fontsize-capHeight));
-        drawHTrapeze(startx/1000f,(y-weight/2)/1000f,endx/1000f,endx/1000f,(y+weight/2)/1000f,startx/1000f,true,true,props);
-      }
-      if(inline.hasOverline())
-      {
-        Color ct=(Color)inline.getTrait(Trait.OVERLINE_COLOR);
-        BorderProps props=new BorderProps(Constants.EN_SOLID,0,0,0,ct,Mode.SEPARATE);
-        float y=line-(1.2f*capHeight);
-        drawHTrapeze(startx/1000f,(y-weight/2)/1000f,endx/1000f,endx/1000f,(y+weight/2)/1000f,startx/1000f,true,true,props);
-      }
-      if(inline.hasLineThrough())
-      {
-        Color ct=(Color)inline.getTrait(Trait.LINETHROUGH_COLOR);
-        BorderProps props=new BorderProps(Constants.EN_SOLID,0,0,0,ct,Mode.SEPARATE);
-        float y=line-(0.45f*capHeight);
-        drawHTrapeze(startx/1000f,(y-weight/2)/1000f,endx/1000f,endx/1000f,(y+weight/2)/1000f,startx/1000f,true,true,props);
-      }
-    }
-  }
-	
-  private TextArea discover(int bp,TextArea previousLeft,TextArea text,Map<TextArea,TextArea> l,Map<TextArea,TextArea> r,Map<TextArea,Integer> b) {
-    if(previousLeft!=null) {
-      r.put(previousLeft,text);
-      l.put(text,previousLeft);
-    }
-    b.put(text,bp);
-    return text;
-  }
-	
-  private TextArea discover(int bp,TextArea previousLeft,InlineParent parent,Map<TextArea,TextArea> l,Map<TextArea,TextArea> r,Map<TextArea,Integer> b) {
-    for(InlineArea child:parent.getChildAreas()) {
-      if(child instanceof TextArea) {
-        previousLeft=discover(bp,previousLeft,(TextArea)child,l,r,b);
-      } else if(child instanceof InlineParent) {
-        InlineParent ip=(InlineParent)child;
-        previousLeft=discover(bp+ip.getBlockProgressionOffset(),previousLeft,ip,l,r,b);
-      }
-    }
-    return previousLeft;
-  }
-	
-	private void discover(int bp,TextArea previousLeft,LineArea line,Map<TextArea,TextArea> l,Map<TextArea,TextArea> r,Map<TextArea,Integer> b) {
-	  for(Object child:line.getInlineAreas()) {
-	    if(child instanceof TextArea) {
-	      previousLeft=discover(bp,previousLeft,(TextArea)child,l,r,b);
-	    } else if(child instanceof InlineParent) {
-	      InlineParent ip=(InlineParent)child;
-	      previousLeft=discover(bp+ip.getBlockProgressionOffset(),previousLeft,ip,l,r,b);
-	    }
-	  }
-	}
-	
-	private Stack<Map<TextArea,TextArea>> leftStack=new Stack<>();
-	private Stack<Map<TextArea,TextArea>> rightStack=new Stack<>();
-  private Stack<Map<TextArea,Integer>> bpStack=new Stack<>();
-  
 	@Override
   protected void renderLineArea(LineArea line) {
-    Map<TextArea,TextArea> l=new HashMap<>();
-    Map<TextArea,TextArea> r=new HashMap<>();
-    Map<TextArea,Integer> b=new HashMap<>();
-    leftStack.push(l);
-    rightStack.push(r);
-    bpStack.push(b);
-    
-    discover(currentBPPosition+line.getSpaceBefore(),null,line,l,r,b);
-    
     super.renderLineArea(line);
-    
-    leftStack.pop();
-    rightStack.pop();
-    bpStack.pop();
+    textOutput.endLine();
   }
 	
 	@Override
@@ -997,7 +861,6 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
         coalesce=false;
         break;
       }
-      //TODO do some additional validation here and there
       concat.append(((TextArea)inline).getText());
       totalIPD+=inline.getAllocIPD();
     }
@@ -1028,11 +891,10 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
     int bl = currentBPPosition + ip.getBlockProgressionOffset() + first.getBlockProgressionOffset() + first.getBaselineOffset();
     
     Color col = (Color) first.getTrait(Trait.COLOR);
-    wrapper.setColor(Convert.toRGBA(col));
 
     FontMetrics fm=font.getFontMetrics();
     float adjust = (fm.getAscender(font.getFontSize())-fm.getDescender(font.getFontSize()))/1_000_000.0f;
-    wrapper.drawString(concat.toString(), rx / 1000f, (bl / 1000f)-adjust);
+    textOutput.text(concat.toString(), rx / 1000f, (bl / 1000f)-adjust,tf.getFontName(),font.getFontSize(),Convert.toRGBA(col),null,null,null);
     
     
     currentIPPosition += ip.getAllocIPD();
@@ -1052,17 +914,14 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
 		state.updateFont(tf.getFontName(), font.getFontSize());
 		Color col = (Color) text.getTrait(Trait.COLOR);
 		state.configureGC(wrapper);
-		wrapper.setColor(Convert.toRGBA(col));
+    int fontsize = text.getTraitAsInteger(Trait.FONT_SIZE);
 
-		renderText(text, font, rx / 1000f, bl / 1000f);
+		renderText(text, font, tf.getFontName(), fontsize, rx / 1000f, bl / 1000f, col);
 
 		currentIPPosition = saveIP + text.getAllocIPD();
-
-		int fontsize = text.getTraitAsInteger(Trait.FONT_SIZE);
-		renderTextDecoration(tf, fontsize, text, bl, rx);
 	}
 
-	private void renderText(TextArea text, Font font, float x, float y) {
+	private void renderText(TextArea text, Font font, String fontName, int fontSize, float x, float y, Color color) {
 		float textCursor = x;
 
 		//Optimize: if trivial set of words and spaces, append everything and draw in one go
@@ -1095,7 +954,16 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
     float adjust = (fm.getAscender(font.getFontSize())-fm.getDescender(font.getFontSize()))/1_000_000.0f;
 		
     if(trivial) {
-      wrapper.drawString(concat.toString(), textCursor, y-adjust);
+      textOutput.text(
+          concat.toString(),
+          textCursor,
+          y-adjust,
+          fontName,
+          fontSize,
+          Convert.toRGBA(color),
+          text.hasUnderline()?Convert.toRGBA((Color)text.getTrait(Trait.UNDERLINE_COLOR)):null,
+          text.hasLineThrough()?Convert.toRGBA((Color)text.getTrait(Trait.LINETHROUGH_COLOR)):null,
+          text.hasOverline()?Convert.toRGBA((Color)text.getTrait(Trait.OVERLINE_COLOR)):null);
     } else {
   		iter = text.getChildAreas().iterator();
   		while (iter.hasNext()) {
@@ -1103,7 +971,16 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
   			if (child instanceof WordArea) {
   				WordArea word = (WordArea) child;
   				String s = word.getWord();
-  				wrapper.drawString(s, textCursor, y-adjust);
+  				textOutput.text(
+  				    s,
+  				    textCursor,
+  				    y-adjust,
+  				    fontName,
+  				    fontSize,
+  				    Convert.toRGBA(color),
+  				    text.hasUnderline()?Convert.toRGBA((Color)text.getTrait(Trait.UNDERLINE_COLOR)):null,
+  				    text.hasLineThrough()?Convert.toRGBA((Color)text.getTrait(Trait.LINETHROUGH_COLOR)):null,
+  				    text.hasOverline()?Convert.toRGBA((Color)text.getTrait(Trait.OVERLINE_COLOR)):null);
   				textCursor += wrapper.stringExtentWidth(s);
   			} else if (child instanceof SpaceArea) {
   				SpaceArea space = (SpaceArea) child;
