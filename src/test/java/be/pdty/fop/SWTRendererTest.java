@@ -88,7 +88,7 @@ public class SWTRendererTest
 
     TransformerFactory transformerFactory = TransformerFactory.newInstance();
     Transformer transformer = transformerFactory.newTransformer();
-    //Source src = new StreamSource(new java.io.FileInputStream("d:\\temp\\doc5.xml")); //$NON-NLS-1$
+    Source src = new StreamSource(new java.io.FileInputStream("d:\\temp\\doc5.xml")); //$NON-NLS-1$
     //Source src = new StreamSource(SWTRendererTest.class.getClassLoader().getResourceAsStream("be/pdty/fop/doc2.xml")); //$NON-NLS-1$
     //Source src = new StreamSource(new java.net.URL("http://xep.xattic.com/xep/testsuite/features/leader.fo").openStream()); //$NON-NLS-1$
     //Source src = new StreamSource(new java.net.URL("http://xep.xattic.com/xep/testsuite/features/containers.fo").openStream()); //$NON-NLS-1$
@@ -99,11 +99,28 @@ public class SWTRendererTest
     //Source src = new StreamSource(new java.net.URL("http://www.renderx.com/files/demos/examples/order/receipt_order.fo").openStream()); //$NON-NLS-1$
     //Source src = new StreamSource(new java.net.URL("http://www.renderx.com/files/demos/examples/balance/balance_sheet.fo").openStream()); //$NON-NLS-1$
     
-    Source src = new StreamSource(new java.net.URL("http://xep.xattic.com/xep/testsuite/features/decoration.fo").openStream()); //$NON-NLS-1$
+    //Source src = new StreamSource(new java.net.URL("http://xep.xattic.com/xep/testsuite/features/decoration.fo").openStream()); //$NON-NLS-1$
     Result res = new SAXResult(fop.getDefaultHandler());
     transformer.transform(src, res);
     
     Display display=Display.getDefault();
+    
+    /*
+    PrinterData pdata = Printer.getDefaultPrinterData();
+    Printer printer = new Printer(pdata);
+    printer.startJob("test");
+    printer.startPage();
+    
+    GC gc = new GC(printer);
+    Printable p = renderer.getPrintable(0);
+    p.print(gc);
+    
+    
+    printer.endPage();
+    printer.endJob();
+    
+    if(true) return;
+    */
     
     for(int i=0;i<renderer.getNumberOfPages()*0+1;i++) {
       Shell sh=new Shell(display);
