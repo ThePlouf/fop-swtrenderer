@@ -6,6 +6,13 @@ Compared to AWTRenderer, it has the following limitations:
   * Font glyph offsets are not supported;
   * Images coming from AWT's Graphics2D are not supported.
 
+It brings interesting features, however:
+  * All geometries such as table borders are merged together and rasterized at once, thus avoiding any "gaps" especially at table corners;
+  * Several optimizations to coalesce consecutive text nodes such as text leaders bring significant performance gains;
+  * Advanced underlining logic combines several consecutive text does to find the best position and height for the line instead of rendering it word per word;
+  * Underlining is done using a "skip ink" logic that avoid having the underline crossing the character's descenders;
+  * Some bugfixes were implemented on top of the AWT renderer.
+
 For anything else, it is probably *good enough* for any practical use.
 
 Using the SWTRenderer is quite similar to using the AWTRenderer: it implements an SWT variation of a Pageable object, allowing to render pages to specific GC's. The actual rendering is done lazily, i.e. no actual rendering will take place during the creation of the Pageable object itself but will be deferred until actually rendered to a GC.
