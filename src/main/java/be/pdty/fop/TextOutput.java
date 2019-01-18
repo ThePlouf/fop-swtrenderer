@@ -163,7 +163,7 @@ public class TextOutput {
             float right = r.x + r.length;
             float ascent = r.baseline - r.fm.ascent;
             float descent = r.baseline + r.fm.descent;
-            float strength = r.fm.height / 12.0f;
+            float strength = r.fm.height / 16.0f;
             descent -= strength / 2;
 
             if (left < ans.left)
