@@ -20,7 +20,6 @@ import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.GeneralPath;
-import java.awt.geom.Line2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.ColorModel;
 import java.awt.image.Raster;
@@ -1010,8 +1009,6 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
         Color col = (Color) area.getTrait(Trait.COLOR);
         state.updateColor(col);
 
-        Line2D.Float line = new Line2D.Float();
-        line.setLine(startx, starty, endx, starty);
         float ruleThickness = area.getRuleThickness() / 1000f;
 
         BorderProps props;

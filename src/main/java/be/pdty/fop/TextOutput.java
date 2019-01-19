@@ -101,7 +101,7 @@ public class TextOutput {
         String env = System.getenv("FOP_SWT_RENDER_UNDERLINE_METHOD"); //$NON-NLS-1$
         if (env != null) {
             try {
-                int val = Integer.valueOf(env);
+                int val = Integer.parseInt(env);
                 switch (val) {
                 case 0:
                 default:

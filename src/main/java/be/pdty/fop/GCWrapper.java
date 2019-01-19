@@ -304,6 +304,8 @@ public class GCWrapper {
                 }
                 points.clear();
                 break;
+            default:
+                break;
             }
         }
     }

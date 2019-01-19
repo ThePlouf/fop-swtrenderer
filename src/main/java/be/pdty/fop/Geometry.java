@@ -257,6 +257,8 @@ public class Geometry {
                     current = new ArrayList<>();
                 }
                 break;
+            default:
+                break;
             }
 
             previousX = targetX;
@@ -351,6 +353,10 @@ public class Geometry {
             switch (type) {
             case PathIterator.SEG_MOVETO:
                 firstX = p[0];
+                left = Math.min(left, p[0]);
+                right = Math.max(right, p[0]);
+                prevX = p[0];
+                break;
             case PathIterator.SEG_LINETO:
                 left = Math.min(left, p[0]);
                 right = Math.max(right, p[0]);

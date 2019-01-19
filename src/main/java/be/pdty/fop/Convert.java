@@ -70,6 +70,8 @@ public class Convert {
         case BasicStroke.CAP_SQUARE:
             ans.cap = SWT.CAP_SQUARE;
             break;
+        default:
+            break;
         }
         switch (stroke.getLineJoin()) {
         case BasicStroke.JOIN_BEVEL:
@@ -80,6 +82,8 @@ public class Convert {
             break;
         case BasicStroke.JOIN_ROUND:
             ans.join = SWT.JOIN_ROUND;
+            break;
+        default:
             break;
         }
         return ans;
@@ -130,6 +134,8 @@ public class Convert {
                 break;
             case PathIterator.SEG_CLOSE:
                 typeList.add((byte) SWT.PATH_CLOSE);
+                break;
+            default:
                 break;
             }
             it.next();
