@@ -297,7 +297,7 @@ public class Geometry {
             events.put(start, events.getOrDefault(start, 0) + 1);
             events.put(start + length, events.getOrDefault(start + length, 0) - 1);
         }
-        
+
         //And now we iterate through the map to build the final list of intervals.
         List<double[]> ans = new ArrayList<>();
         int w = 0;
@@ -333,11 +333,11 @@ public class Geometry {
         //First we compute the intersection of the text outline and the underline.
         Area intersect = new Area(textOutline);
         intersect.intersect(new Area(underline));
-        
+
         //This intersection area is a set of mostly disjoint segments. For each shape we
         //will compute the maximum horizontal extent.
         List<double[]> segments = new ArrayList<>();
-        
+
         //We try to be as accurate as possible, so we'll compute the proper extent
         //even for quadratic and cubic curves.
         PathIterator pi = intersect.getPathIterator(null);
@@ -403,11 +403,11 @@ public class Geometry {
             }
             pi.next();
         }
-        
+
         //Merge and negate to have the list of allowable underline.
         segments = sortAndMergeIntervals(segments);
         segments = negate(segments, underline.getX(), underline.getWidth());
-        
+
         //We will add left and right margins, except for first and last segments.
         double margin = underline.getHeight();
         for (int i = 0; i < segments.size(); i++) {
@@ -419,7 +419,7 @@ public class Geometry {
             if (i < segments.size() - 1)
                 d[1] -= margin;
         }
-        
+
         //Cleanup segments that are too small.
         segments.removeIf(d -> d[1] < margin);
 

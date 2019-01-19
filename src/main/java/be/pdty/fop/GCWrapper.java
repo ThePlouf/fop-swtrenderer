@@ -589,14 +589,15 @@ public class GCWrapper {
     }
 
     /**
-     * Get the font provider using by this GC. Note that this provider will
-     * only remain valid as long as this wrapper is not disposed.
+     * Get the font provider using by this GC. Note that this provider will only
+     * remain valid as long as this wrapper is not disposed.
+     * 
      * @return font provider.
      */
     public Base14FontProvider getFontProvider() {
         return fontCache;
     }
-    
+
     /**
      * Font metrics information (as SWT won't let us create our own instances).
      */
@@ -617,24 +618,26 @@ public class GCWrapper {
          * Height.
          */
         public float height;
-        
+
         /**
          * Create a new Metrics.
+         * 
          * @param l leading.
          * @param a ascent.
          * @param d descent.
          * @param h height.
          */
-        public Metrics(float l,float a,float d,float h) {
+        public Metrics(float l, float a, float d, float h) {
             leading = l;
             ascent = a;
             descent = d;
             height = h;
         }
     }
-    
+
     /**
      * Get the current font metrics.
+     * 
      * @return font metrics.
      */
     public Metrics getFontMetrics() {
@@ -644,7 +647,7 @@ public class GCWrapper {
         FontMetrics fm = gc.getFontMetrics();
         return new Metrics(fm.getLeading() / PF, fm.getAscent() / PF, fm.getDescent() / PF, fm.getHeight() / PF);
     }
-    
+
     /**
      * Compute the string extend width.
      * 

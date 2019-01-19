@@ -48,6 +48,7 @@ public class Base14FontProvider {
 
         /**
          * Create a new FontInfo.
+         * 
          * @param n system name.
          * @param s SWT style.
          */
