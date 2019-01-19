@@ -1,225 +1,399 @@
-/*
- * Copyright 2019 Philippe Detournay
- * 
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not
- * use this file except in compliance with the License. You may obtain a copy of
- * the License at
- * 
- * http://www.apache.org/licenses/LICENSE-2.0
- * 
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations under
- * the License.
- */
 package be.pdty.fop;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.awt.BasicStroke;
-import java.awt.BorderLayout;
-import java.awt.Canvas;
-import java.awt.Color;
 import java.awt.Font;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.Image;
-import java.awt.Rectangle;
-import java.awt.RenderingHints;
 import java.awt.Shape;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
 import java.awt.font.FontRenderContext;
-import java.awt.font.TextAttribute;
 import java.awt.font.TextLayout;
-import java.awt.geom.AffineTransform;
 import java.awt.geom.Area;
+import java.awt.geom.Path2D;
+import java.awt.geom.PathIterator;
 import java.awt.geom.Rectangle2D;
-import java.awt.image.ImageObserver;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Writer;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
-import java.util.Map;
 
-import javax.swing.JFrame;
-import javax.swing.JSlider;
+import org.junit.Test;
 
-/**
- * GeometryTest.
- */
-@SuppressWarnings({ "serial", "nls", "unused" })
+import be.pdty.fop.Geometry.UnderlineMethod;
+
+@SuppressWarnings("javadoc")
 public class GeometryTest {
-    private static void offset() {
-        final JFrame frame = new JFrame();
-        frame.setLayout(new BorderLayout());
-        frame.addWindowListener(new WindowAdapter() {
-            @Override
-            public void windowClosing(WindowEvent we) {
-                frame.dispose();
+    private static void testCloseEnough(Shape ref,Shape test) {
+        Area xor = new Area(ref);
+        xor.exclusiveOr(new Area(test));
+        
+        double sumOfArea = 0;
+        PathIterator it = xor.getPathIterator(null,0.1f);
+        double[] p = new double[2];
+        double firstX = 0;
+        double firstY = 0;
+        double prevX = 0;
+        double prevY = 0;
+        while(!it.isDone()) {
+            int type = it.currentSegment(p);
+            switch(type) {
+            case PathIterator.SEG_MOVETO:
+                firstX = p[0];
+                firstY = p[1];
+                prevX = firstX;
+                prevY = firstY;
+                break;
+            case PathIterator.SEG_LINETO:
+                double x = p[0];
+                double y = p[1];
+                sumOfArea += (prevX * y) - (x * prevY);
+                prevX = x;
+                prevY = y;
+                break;
+            case PathIterator.SEG_CLOSE:
+                sumOfArea += (prevX * firstY) - (firstX * prevY);
+                break;
             }
-        });
+            it.next();
+        }
+        
+        assertTrue(sumOfArea < 0.1);
+    }
+    
+    @Test
+    public void testStraight() {
+        Path2D.Double textOutline = new Path2D.Double();
+        Rectangle2D.Double underline = new Rectangle2D.Double(0,140,800,20);
+        List<Shape> l = Geometry.getUnderlineShapes(textOutline,underline,UnderlineMethod.STRAIGHT);
+        assertEquals(1,l.size());
+        
+        assertTrue(l.get(0) instanceof Rectangle2D);
+        Rectangle2D r1 = (Rectangle2D)l.get(0);
+        assertEquals(underline,r1);
+    }
+    
+    @Test
+    public void testLargestGapStraight() {
+        Path2D.Double textOutline = new Path2D.Double();
+        
+        textOutline.moveTo(100,100);
+        textOutline.lineTo(200,100);
+        textOutline.lineTo(200,200);
+        textOutline.lineTo(100,200);
+        textOutline.closePath();
+        
+        textOutline.moveTo(220,100);
+        textOutline.lineTo(240,100);
+        textOutline.lineTo(240,200);
+        textOutline.lineTo(200,200);
+        textOutline.closePath();
+        
+        Rectangle2D.Double underline = new Rectangle2D.Double(0,140,800,20);
+        
+        List<Shape> l = Geometry.getUnderlineShapes(textOutline,underline,UnderlineMethod.LARGEST_GAP);
+        assertEquals(2,l.size());
+        
+        assertTrue(l.get(0) instanceof Rectangle2D);
+        Rectangle2D r1 = (Rectangle2D)l.get(0);
+        assertEquals(new Rectangle2D.Double(0,140,80,20),r1);
 
-        final JSlider slider = new JSlider(-100, 500);
+        assertTrue(l.get(1) instanceof Rectangle2D);
+        Rectangle2D r2 = (Rectangle2D)l.get(1);
+        assertEquals(new Rectangle2D.Double(260,140,540,20),r2);
+    }
 
-        Canvas canvas = new Canvas() {
-            @Override
-            public void update(Graphics g) {
-                paint(g);
+    @Test
+    public void testLargestGapQuad() {
+        Path2D.Double textOutline = new Path2D.Double();
+        
+        textOutline.moveTo(100,100);
+        textOutline.lineTo(200,100);
+        textOutline.quadTo(250,150,200,200);
+        textOutline.lineTo(100,200);
+        textOutline.closePath();
+        
+        textOutline.moveTo(300,100);
+        textOutline.lineTo(400,100);
+        textOutline.quadTo(350,150,400,200);
+        textOutline.lineTo(300,200);
+        textOutline.closePath();
+        
+        textOutline.moveTo(500,100);
+        textOutline.lineTo(600,100);
+        textOutline.quadTo(650,150,700,200);
+        textOutline.lineTo(500,200);
+        textOutline.closePath();
+        
+        Rectangle2D.Double underline = new Rectangle2D.Double(0,140,800,20);
+        
+        List<Shape> l = Geometry.getUnderlineShapes(textOutline,underline,UnderlineMethod.LARGEST_GAP);
+        assertEquals(4,l.size());
+        
+        assertTrue(l.get(0) instanceof Rectangle2D);
+        Rectangle2D r1 = (Rectangle2D)l.get(0);
+        assertEquals(new Rectangle2D.Double(0,140,80,20),r1);
+
+        assertTrue(l.get(1) instanceof Rectangle2D);
+        Rectangle2D r2 = (Rectangle2D)l.get(1);
+        assertEquals(new Rectangle2D.Double(245,140,35,20),r2);
+
+        assertTrue(l.get(2) instanceof Rectangle2D);
+        Rectangle2D r3 = (Rectangle2D)l.get(2);
+        assertEquals(new Rectangle2D.Double(396,140,84,20),r3);
+
+        assertTrue(l.get(3) instanceof Rectangle2D);
+        Rectangle2D r4 = (Rectangle2D)l.get(3);
+        assertEquals(new Rectangle2D.Double(680,140,120,20),r4);
+    }
+    
+    private double round(double d) {
+        return Math.round(d*100)/100.0;
+    }
+    
+    private Rectangle2D round(Rectangle2D in) {
+        return new Rectangle2D.Double(round(in.getMinX()),round(in.getMinY()),round(in.getWidth()),round(in.getHeight()));
+    }
+    
+    @Test
+    public void testLargestGapCubic() {
+        Path2D.Double textOutline = new Path2D.Double();
+        
+        textOutline.moveTo(100,100);
+        textOutline.lineTo(200,100);
+        textOutline.curveTo(250,100,250,200,200,200);
+        textOutline.lineTo(100,200);
+        textOutline.closePath();
+
+        textOutline.moveTo(300,100);
+        textOutline.lineTo(400,100);
+        textOutline.curveTo(420,100,430,200,450,200);
+        textOutline.lineTo(300,200);
+        textOutline.closePath();
+
+        textOutline.moveTo(500,100);
+        textOutline.lineTo(600,100);
+        textOutline.curveTo(700,150,600,200,650,200);
+        textOutline.lineTo(500,200);
+        textOutline.closePath();
+        
+        textOutline.moveTo(800,100);
+        textOutline.lineTo(900,100);
+        textOutline.curveTo(750,160,925,200,950,200);
+        textOutline.lineTo(800,200);
+        textOutline.closePath();
+        
+        Rectangle2D.Double underline = new Rectangle2D.Double(0,140,1000,20);
+        List<Shape> l = Geometry.getUnderlineShapes(textOutline,underline,UnderlineMethod.LARGEST_GAP);
+
+        assertEquals(5,l.size());
+        
+        assertTrue(l.get(0) instanceof Rectangle2D);
+        Rectangle2D r1 = (Rectangle2D)l.get(0);
+        assertEquals(new Rectangle2D.Double(0,140,80,20),round(r1));
+
+        assertTrue(l.get(1) instanceof Rectangle2D);
+        Rectangle2D r2 = (Rectangle2D)l.get(1);
+        assertEquals(new Rectangle2D.Double(257.5,140,22.5,20),round(r2));
+
+        assertTrue(l.get(2) instanceof Rectangle2D);
+        Rectangle2D r3 = (Rectangle2D)l.get(2);
+        assertEquals(new Rectangle2D.Double(448.02,140,31.98,20),round(r3));
+
+        assertTrue(l.get(3) instanceof Rectangle2D);
+        Rectangle2D r4 = (Rectangle2D)l.get(3);
+        assertEquals(new Rectangle2D.Double(666.59,140,113.41,20),round(r4));
+
+        assertTrue(l.get(4) instanceof Rectangle2D);
+        Rectangle2D r5 = (Rectangle2D)l.get(4);
+        assertEquals(new Rectangle2D.Double(864.71,140,135.29,20),round(r5));
+    }    
+    
+    @Test
+    public void testStraightUnderlineOffset() {
+        Path2D.Double textOutline = new Path2D.Double();
+        
+        textOutline.moveTo(100,100);
+        textOutline.lineTo(200,100);
+        textOutline.lineTo(200,200);
+        textOutline.lineTo(100,200);
+        textOutline.closePath();
+        
+        textOutline.moveTo(220,100);
+        textOutline.lineTo(240,100);
+        textOutline.lineTo(240,200);
+        textOutline.lineTo(200,200);
+        textOutline.closePath();
+        
+        Rectangle2D.Double underline = new Rectangle2D.Double(0,140,800,20);
+        
+        List<Shape> l1 = Geometry.getUnderlineShapes(textOutline,underline,UnderlineMethod.LARGEST_GAP);
+        List<Shape> l2 = Geometry.getUnderlineShapes(textOutline,underline,UnderlineMethod.OFFSET_MASK);
+        
+        Path2D.Double combinedL1 = new Path2D.Double();
+        l1.forEach(l->combinedL1.append(l,false));
+
+        Path2D.Double combinedL2 = new Path2D.Double();
+        l2.forEach(l->combinedL2.append(l,false));
+        
+        testCloseEnough(combinedL1,combinedL2);
+    }
+    
+    @SuppressWarnings("nls")
+    private static void save(Shape shape,Path target,String description) throws IOException {
+        Files.createDirectories(target.getParent());
+        try(Writer writer=Files.newBufferedWriter(target,Charset.forName("UTF-8"))) {
+            writer.append("# "+description+"\n\n");
+            PathIterator it=shape.getPathIterator(null);
+            double[] p=new double[6];
+            while(!it.isDone()) {
+                int type = it.currentSegment(p);
+                switch(type) {
+                case PathIterator.SEG_MOVETO:
+                case PathIterator.SEG_LINETO:
+                    writer.append(""+type+"|"+p[0]+"|"+p[1]+"\n");
+                    break;
+                case PathIterator.SEG_QUADTO:
+                    writer.append(""+type+"|"+p[0]+"|"+p[1]+"|"+p[2]+"|"+p[3]+"\n");
+                    break;
+                case PathIterator.SEG_CUBICTO:
+                    writer.append(""+type+"|"+p[0]+"|"+p[1]+"|"+p[2]+"|"+p[3]+"|"+p[4]+"|"+p[5]+"\n");
+                    break;
+                case PathIterator.SEG_CLOSE:
+                    writer.append(""+type+"\n\n");
+                    break;
+                }
+                it.next();
             }
-
-            @Override
-            public void paint(Graphics graphics) {
-                Image img = createImage(getSize().width, getSize().height);
-                Graphics2D g = (Graphics2D) img.getGraphics();
-
-                g.setColor(new Color(255, 255, 255));
-                Rectangle r = getBounds();
-                g.fillRect(r.x, r.y, r.width, r.height);
-                g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-                Font font = new Font("Times", Font.PLAIN, 140); //$NON-NLS-1$
-                Map map = font.getAttributes();
-                map.put(TextAttribute.KERNING, TextAttribute.KERNING_ON);
-                map.put(TextAttribute.LIGATURES, TextAttribute.LIGATURES_ON);
-                font = font.deriveFont(map);
-                g.setFont(font);
-
-                //String str="सभी मनुष्यों को गौरव और";
-                //String str="تَعْليق";
-                //String str="พยัญชนะรูปสระ";
-                //String str="在尊严和权利上一";
-                String str = "WAWAç jpg xylop";
-                //String str="龘齉爨馕";
-                //String str="👱 👨‍❤💋‍👧‍👦";
-                g.setColor(new Color(0, 0, 0));
-                //g.drawString(str, 10f, 70f+font.getSize2D());
-
-                FontRenderContext context = new FontRenderContext(null, true, true);
-                TextLayout layout = new TextLayout(str, font, context);
-                AffineTransform tr = new AffineTransform();
-                tr.translate(10f, 70f + font.getSize2D());
-                Shape shape = layout.getOutline(tr);
-
-                /*
-                Path2D.Float shape=new Path2D.Float();
-                
-                shape.moveTo(100,100);
-                shape.lineTo(290,490);
-                shape.lineTo(400,500);
-                shape.lineTo(100,500);
-                shape.closePath();
-                */
-
-                g.setColor(new Color(0, 0, 0));
-                g.fill(shape);
-
-                Rectangle2D.Float underline = new Rectangle2D.Float(10f,
-                        70f + font.getSize2D() + g.getFontMetrics().getDescent() - font.getSize2D() / 10f,
-                        g.getFontMetrics().stringWidth(str), font.getSize2D() / 10f);
-                Area ua = new Area(underline);
-
-                float extend = font.getSize2D() / 30f * slider.getValue() / 25f;
-                long before = System.nanoTime();
-                Area ta = new Area(Geometry.offsetShape(shape, extend, BasicStroke.JOIN_MITER));
-                long after = System.nanoTime();
-                System.out.println((after - before) / 1_000_000f);
-
-                g.setColor(new Color(0, 255, 0));
-                //g.fill(ta);
-
-                /*
-                BasicStroke st=new BasicStroke(extend,BasicStroke.CAP_BUTT,BasicStroke.JOIN_MITER,10f);
-                g.setColor(new Color(0,255,0,128));
-                g.setStroke(st);
-                g.draw(shape);
-                g.setStroke(new  BasicStroke());
-                */
-
-                g.setColor(new Color(255, 0, 255));
-                g.draw(ta);
-
-                ua.subtract(ta);
-                g.setColor(new Color(0, 0, 0));
-                g.fill(ua);
-
-                graphics.drawImage(img, 0, 0, new ImageObserver() {
-                    @Override
-                    public boolean imageUpdate(Image i, int infoflags, int x, int y, int width, int height) {
-                        return false;
+            writer.flush();
+        }
+    }
+    
+    @SuppressWarnings("nls")
+    private static Shape load(InputStream is) throws IOException {
+        Path2D.Double ans = new Path2D.Double();
+        
+        try(BufferedReader br = new BufferedReader(new InputStreamReader(is,Charset.forName("UTF-8")))) {
+            String line = br.readLine();
+            while(line!=null) {
+                line=line.trim();
+                if(line.length()>0 && !line.startsWith("#")) {
+                    String[] parts = line.split("\\|");
+                    int type = Integer.parseInt(parts[0]);
+                    switch(type) {
+                        case PathIterator.SEG_MOVETO:
+                            ans.moveTo(Double.parseDouble(parts[1]),Double.parseDouble(parts[2]));
+                            break;
+                        case PathIterator.SEG_LINETO:
+                            ans.lineTo(Double.parseDouble(parts[1]),Double.parseDouble(parts[2]));
+                            break;
+                        case PathIterator.SEG_QUADTO:
+                            ans.quadTo(Double.parseDouble(parts[1]),Double.parseDouble(parts[2]),Double.parseDouble(parts[3]),Double.parseDouble(parts[4]));
+                            break;
+                        case PathIterator.SEG_CUBICTO:
+                            ans.curveTo(Double.parseDouble(parts[1]),Double.parseDouble(parts[2]),Double.parseDouble(parts[3]),Double.parseDouble(parts[4]),Double.parseDouble(parts[5]),Double.parseDouble(parts[6]));
+                            break;
+                        case PathIterator.SEG_CLOSE:
+                            ans.closePath();
+                            break;
                     }
-                });
-                img.flush();
+                }
+                
+                line = br.readLine();
             }
-        };
-        frame.add(canvas, BorderLayout.CENTER);
-        slider.setValue(100);
-        frame.add(slider, BorderLayout.SOUTH);
-        slider.addChangeListener(e -> canvas.repaint());
-
-        frame.setSize(1024, 768);
-
-        frame.setVisible(true);
+        }
+        return ans;
     }
+    
+    
+    @SuppressWarnings({ "nls", "unused" })
+    private static void genData(String text,String name) throws IOException {
+        Font font = new Font("Times", Font.PLAIN, 120);
+        FontRenderContext ctx = new FontRenderContext(null, true, true);
+        TextLayout layout = new TextLayout(text, font, ctx);
+        Shape textShape = layout.getOutline(null);
+        save(textShape,Paths.get("src/test/resources/be/pdty/fop/offset/"+name+"_base.txt"),"Base geometry for "+name+": "+text);
 
-    private static void intersect() {
-        final JFrame frame = new JFrame();
-        frame.setLayout(new BorderLayout());
-        frame.addWindowListener(new WindowAdapter() {
-            @Override
-            public void windowClosing(WindowEvent we) {
-                frame.dispose();
-            }
-        });
-
-        Canvas canvas = new Canvas() {
-
-            @Override
-            public void update(Graphics graphics) {
-                paint(graphics);
-            }
-
-            @Override
-            public void paint(Graphics graphics) {
-                Graphics2D g = (Graphics2D) graphics;
-                g.setColor(new Color(255, 255, 255));
-                g.fillRect(0, 0, getSize().width, getSize().height);
-                g.setColor(new Color(0, 0, 0));
-                g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-                String str = "jlçrjpgaj";
-                //String str="सभी मनुष्यों को गौरव और";
-                //String str="تَعْليق";
-                //String str="พยัญชนะรูปสระ";
-                //String str="在尊严和权利上一";
-                //String str="龘齉爨馕";
-                //String str="👱 👨‍❤💋‍👧‍👦";
-                Font font = new Font("Times", Font.PLAIN, 120);
-                FontRenderContext ctx = new FontRenderContext(null, true, true);
-                TextLayout layout = new TextLayout(str, font, ctx);
-                AffineTransform tr = new AffineTransform();
-                tr.translate(50, font.getSize());
-                Shape textShape = layout.getOutline(tr);
-                g.fill(textShape);
-
-                Rectangle2D underline = new Rectangle2D.Double(textShape.getBounds().getX(),
-                        textShape.getBounds().getY() + font.getSize() * 5 / 6, textShape.getBounds().getWidth(),
-                        font.getSize() / 12);
-
-                List<Shape> split = Geometry.getUnderlineShapes(textShape, underline, Geometry.UnderlineMethod.OFFSET_MASK);
-
-                g.setColor(new Color(0, 0, 255));
-                split.forEach(s -> g.fill(s));
-            }
-
-        };
-        frame.add(canvas, BorderLayout.CENTER);
-        frame.setSize(640, 400);
-
-        frame.setVisible(true);
-
+        double offset = 20;
+        save(Geometry.offsetShape(textShape,offset,BasicStroke.JOIN_BEVEL),Paths.get("src/test/resources/be/pdty/fop/offset/"+name+"_bevel.txt"),"Offset "+offset+" Bevel geometry for "+name+": "+text);
+        save(Geometry.offsetShape(textShape,offset,BasicStroke.JOIN_MITER),Paths.get("src/test/resources/be/pdty/fop/offset/"+name+"_miter.txt"),"Offset "+offset+" Miter geometry for "+name+": "+text);
+        save(Geometry.offsetShape(textShape,offset,BasicStroke.JOIN_ROUND),Paths.get("src/test/resources/be/pdty/fop/offset/"+name+"_round.txt"),"Offset "+offset+" Round geometry for "+name+": "+text);
     }
+    
 
-    /**
-     * @param args
-     */
-    public static void main(String[] args) {
-        intersect();
+    @SuppressWarnings("nls")
+    private static void testOffset(String text,String name) throws IOException {
+        Shape base = load(GeometryTest.class.getClassLoader().getResourceAsStream("be/pdty/fop/offset/"+name+"_base.txt"));
+        Shape ref_bevel = load(GeometryTest.class.getClassLoader().getResourceAsStream("be/pdty/fop/offset/"+name+"_bevel.txt"));
+        Shape ref_miter = load(GeometryTest.class.getClassLoader().getResourceAsStream("be/pdty/fop/offset/"+name+"_miter.txt"));
+        Shape ref_round = load(GeometryTest.class.getClassLoader().getResourceAsStream("be/pdty/fop/offset/"+name+"_round.txt"));
+        
+        double offset = 20;
+        Shape bevel = Geometry.offsetShape(base, offset, BasicStroke.JOIN_BEVEL);
+        Shape miter = Geometry.offsetShape(base, offset, BasicStroke.JOIN_MITER);
+        Shape round = Geometry.offsetShape(base, offset, BasicStroke.JOIN_ROUND);
+        
+        testCloseEnough(ref_bevel,bevel);
+        testCloseEnough(ref_miter,miter);
+        testCloseEnough(ref_round,round);
+    }
+    
+    @SuppressWarnings("nls")
+    private static final String[] testData = new String[] {
+            "l","letter_l",
+            "w","letter_w",
+            "o","letter_o",
+            "jlçrjpgaj","latin",
+            "सभी मनुष्यों को गौरव और","hindi",
+            "تَعْليق","arabic",
+            "พยัญชนะรูปสระ","thai",
+            "在尊严和权利上一","chinese_1",
+            "龘齉爨馕","chinese_2",
+            "👱 👨‍❤💋‍👧‍👦","emoji",
+    };
+    
+    /*
+    public static void main(String[] args) throws IOException {
+        for(int i=0;i<testData.length;i+=2) {
+            genData(testData[i],testData[i+1]);
+        }
+    }
+    */
+    
+    @Test
+    public void testOffset() throws IOException {
+        for(int i=0;i<testData.length;i+=2) {
+            testOffset(testData[i],testData[i+1]);
+        }
+    }
+    
+    @Test
+    public void testSmallOffset() {
+        Path2D.Double shape = new Path2D.Double();
+        
+        shape.moveTo(100,100);
+        shape.lineTo(200,100);
+        shape.lineTo(200,200);
+        shape.lineTo(100,200);
+        shape.closePath();
+        
+        shape.moveTo(220,100);
+        shape.lineTo(240,100);
+        shape.lineTo(240,200);
+        shape.lineTo(200,200);
+        shape.closePath();
+        
+        testCloseEnough(shape,Geometry.offsetShape(shape, 0, BasicStroke.JOIN_BEVEL));
+        testCloseEnough(shape,Geometry.offsetShape(shape, 0, BasicStroke.JOIN_MITER));
+        testCloseEnough(shape,Geometry.offsetShape(shape, 0, BasicStroke.JOIN_ROUND));
+
+        testCloseEnough(shape,Geometry.offsetShape(shape, 0.1, BasicStroke.JOIN_BEVEL));
+        testCloseEnough(shape,Geometry.offsetShape(shape, 0.1, BasicStroke.JOIN_MITER));
+        testCloseEnough(shape,Geometry.offsetShape(shape, 0.1, BasicStroke.JOIN_ROUND));
     }
 }

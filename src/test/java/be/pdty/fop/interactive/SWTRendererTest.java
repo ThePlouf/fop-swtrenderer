@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package be.pdty.fop;
+package be.pdty.fop.interactive;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -41,11 +41,16 @@ import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
+import org.junit.Ignore;
 import org.junit.Test;
+
+import be.pdty.fop.Printable;
+import be.pdty.fop.SWTRenderer;
 
 /**
  * SWTRendererTest.
  */
+@Ignore
 public class SWTRendererTest
 {
   /**
@@ -88,7 +93,7 @@ public class SWTRendererTest
 
     TransformerFactory transformerFactory = TransformerFactory.newInstance();
     Transformer transformer = transformerFactory.newTransformer();
-    Source src = new StreamSource(new java.io.FileInputStream("d:\\temp\\doc5.xml")); //$NON-NLS-1$
+    Source src = new StreamSource(new java.io.FileInputStream("d:\\temp\\doc3.xml")); //$NON-NLS-1$
     //Source src = new StreamSource(SWTRendererTest.class.getClassLoader().getResourceAsStream("be/pdty/fop/doc2.xml")); //$NON-NLS-1$
     //Source src = new StreamSource(new java.net.URL("http://xep.xattic.com/xep/testsuite/features/leader.fo").openStream()); //$NON-NLS-1$
     //Source src = new StreamSource(new java.net.URL("http://xep.xattic.com/xep/testsuite/features/containers.fo").openStream()); //$NON-NLS-1$
