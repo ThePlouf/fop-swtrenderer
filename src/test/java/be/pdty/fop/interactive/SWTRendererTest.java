@@ -90,7 +90,7 @@ public class SWTRendererTest {
 
         TransformerFactory transformerFactory = TransformerFactory.newInstance();
         Transformer transformer = transformerFactory.newTransformer();
-        Source src = new StreamSource(new java.io.FileInputStream("d:\\temp\\doc3.xml")); //$NON-NLS-1$
+        Source src = new StreamSource(new java.io.FileInputStream("d:\\temp\\doc5.xml")); //$NON-NLS-1$
         //Source src = new StreamSource(SWTRendererTest.class.getClassLoader().getResourceAsStream("be/pdty/fop/doc2.xml")); //$NON-NLS-1$
         //Source src = new StreamSource(new java.net.URL("http://xep.xattic.com/xep/testsuite/features/leader.fo").openStream()); //$NON-NLS-1$
         //Source src = new StreamSource(new java.net.URL("http://xep.xattic.com/xep/testsuite/features/containers.fo").openStream()); //$NON-NLS-1$

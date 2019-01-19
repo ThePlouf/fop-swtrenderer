@@ -303,12 +303,21 @@ public class TextOutput {
 
         //Append decoration to current segment.
         if (underline != null || strike != null || overline != null) {
+            float extent = gc.stringExtentWidth(s);
+
             Shape shape = null;
             if (underline != null && underlineMethod != UnderlineMethod.STRAIGHT) {
                 shape = getStringOutlineAtBaseline(s, x, baseline, font, fontSize);
+                //A safety measure: on some platforms, the AWT kerning seems to be
+                //disabled or fails to work properly. In this case, the AWT shape
+                //will appear longer that the SWT extent and everything will get
+                //unaligned. To avoid this, we disable the feature in that case.
+                if (shape.getBounds2D().getWidth() > extent) {
+                    shape = null;
+                }
             }
 
-            Request r = new Request(x, baseline, gc.stringExtentWidth(s), metrics, shape);
+            Request r = new Request(x, baseline, extent, metrics, shape);
 
             if (underline != null)
                 underlineRequests.add(r);
