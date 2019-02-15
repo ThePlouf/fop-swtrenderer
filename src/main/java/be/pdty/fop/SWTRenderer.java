@@ -356,9 +356,8 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
                 SWT.PATH_LINE_TO,
                 SWT.PATH_LINE_TO,
                 SWT.PATH_LINE_TO,
-                SWT.PATH_LINE_TO,
-                SWT.PATH_LINE_TO,
-                SWT.PATH_LINE_TO,
+                SWT.PATH_CLOSE,
+                SWT.PATH_MOVE_TO,
                 SWT.PATH_LINE_TO,
                 SWT.PATH_LINE_TO,
                 SWT.PATH_LINE_TO,
@@ -370,15 +369,13 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
                 x + w + weight / 2, y - weight / 2,
                 x + w + weight / 2, y + h + weight / 2,
                 x - weight / 2, y + h + weight / 2,
-                x - weight / 2, y + weight / 2,
 
-                x + weight / 2, y + weight / 2,
                 x + weight / 2, y + h - weight / 2,
                 x + w - weight / 2, y + h - weight / 2,
                 x + w - weight / 2, y + weight / 2,
-                x - weight / 2, y + weight / 2
+                x + weight / 2, y + weight / 2,
 
-        };
+        };        
         if (deferred) {
             wrapper.fillPathDeferred(path);
         } else {
