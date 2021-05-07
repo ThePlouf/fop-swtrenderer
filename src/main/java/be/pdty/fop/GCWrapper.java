@@ -36,7 +36,6 @@ import org.eclipse.swt.graphics.RGBA;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.graphics.Region;
 import org.eclipse.swt.graphics.Transform;
-import org.eclipse.swt.printing.Printer;
 
 /**
  * Wraps a GC to offer multiple additional services: Decimal-precision drawing
@@ -125,19 +124,6 @@ public class GCWrapper {
 
         sx = gc.getDevice().getDPI().x / 72.0f;
         sy = gc.getDevice().getDPI().y / 72.0f;
-
-        // Temporary workaround for SWT bug 498062
-        if (gc.getDevice() instanceof Printer && System.getProperty("os.name").contains("Windows")) { //$NON-NLS-1$ //$NON-NLS-2$
-            String sz = System.getProperty("org.eclipse.swt.internal.deviceZoom", "100"); //$NON-NLS-1$ //$NON-NLS-2$
-            float zoom;
-            try {
-                zoom = Integer.parseInt(sz) / 100.0f;
-            } catch (NumberFormatException ex) {
-                zoom = 1.0f;
-            }
-            sx /= zoom;
-            sy /= zoom;
-        }
 
         fontCache = new Base14FontProvider(gcToWrap.getDevice());
 
