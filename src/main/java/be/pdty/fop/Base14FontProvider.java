@@ -116,19 +116,21 @@ public class Base14FontProvider {
         infos.put("Helvetica-BoldOblique", new FontInfo(systemName, SWT.ITALIC | SWT.BOLD));
 
         // Courier
-        systemName = "Courier";
-        if (!fontSet.contains(systemName))
-            systemName = "Courier New";
-        if (!fontSet.contains(systemName))
-            systemName = "monospace";
-        if (!fontSet.contains(systemName))
-            systemName = "Monospaced";
-        if (!fontSet.contains(systemName))
+        if (System.getenv("GAIA_DISABLE_COURIER") == null) {
             systemName = "Courier";
-        infos.put("Courier", new FontInfo(systemName, SWT.NORMAL));
-        infos.put("Courier-Oblique", new FontInfo(systemName, SWT.ITALIC));
-        infos.put("Courier-Bold", new FontInfo(systemName, SWT.BOLD));
-        infos.put("Courier-BoldOblique", new FontInfo(systemName, SWT.ITALIC | SWT.BOLD));
+            if (!fontSet.contains(systemName))
+                systemName = "Courier New";
+            if (!fontSet.contains(systemName))
+                systemName = "monospace";
+            if (!fontSet.contains(systemName))
+                systemName = "Monospaced";
+            if (!fontSet.contains(systemName))
+                systemName = "Courier";
+            infos.put("Courier", new FontInfo(systemName, SWT.NORMAL));
+            infos.put("Courier-Oblique", new FontInfo(systemName, SWT.ITALIC));
+            infos.put("Courier-Bold", new FontInfo(systemName, SWT.BOLD));
+            infos.put("Courier-BoldOblique", new FontInfo(systemName, SWT.ITALIC | SWT.BOLD));
+        }
 
         // Symbol
         systemName = "Symbol";
