@@ -68,12 +68,12 @@ public class SWTRendererTest {
                 String path = uri.getPath();
                 int pos = path.lastIndexOf('/');
                 path = path.substring(pos + 1);
-                //path="be/pdty/fop/"+path+".png";
-                path = "d:\\temp\\" + path;
+                path="be/pdty/fop/"+path+".png";
+                /*path = "d:\\temp\\" + path;
 
                 System.out.println(path);
-                return new Resource(new FileInputStream(path));
-                //return new Resource(SWTRendererTest.class.getClassLoader().getResourceAsStream(path));
+                return new Resource(new FileInputStream(path));*/
+                return new Resource(SWTRendererTest.class.getClassLoader().getResourceAsStream(path));
             }
 
             @Override
@@ -90,8 +90,7 @@ public class SWTRendererTest {
 
         TransformerFactory transformerFactory = TransformerFactory.newInstance();
         Transformer transformer = transformerFactory.newTransformer();
-        Source src = new StreamSource(new java.io.FileInputStream("d:\\temp\\doc5.xml")); //$NON-NLS-1$
-        //Source src = new StreamSource(SWTRendererTest.class.getClassLoader().getResourceAsStream("be/pdty/fop/doc2.xml")); //$NON-NLS-1$
+        Source src = new StreamSource(SWTRendererTest.class.getClassLoader().getResourceAsStream("be/pdty/fop/doc.xml")); //$NON-NLS-1$
         //Source src = new StreamSource(new java.net.URL("http://xep.xattic.com/xep/testsuite/features/leader.fo").openStream()); //$NON-NLS-1$
         //Source src = new StreamSource(new java.net.URL("http://xep.xattic.com/xep/testsuite/features/containers.fo").openStream()); //$NON-NLS-1$
         //Source src = new StreamSource(new java.net.URL("http://xep.xattic.com/xep/testsuite/features/lists.fo").openStream()); //$NON-NLS-1$

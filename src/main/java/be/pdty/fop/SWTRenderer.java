@@ -175,6 +175,7 @@ public class SWTRenderer extends AbstractPathOrientedRenderer implements Pageabl
     @Override
     public void renderPage(PageViewport pageViewport) throws IOException, FOPException {
         try {
+        	currentPageViewport = pageViewport;
             pageViewportList.add((PageViewport) pageViewport.clone());
         } catch (CloneNotSupportedException e) {
             throw new FOPException(e);
